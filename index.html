@@ -14,8 +14,32 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <!-- Anmeldung (nur aktiv, wenn Supabase in config.js eingetragen ist) -->
+  <section id="auth" class="view hidden">
+    <div class="auth-wrap">
+      <div class="auth-card">
+        <div class="brand"><img src="icon.svg" alt="" width="32" height="32"><span>Jelly Notes</span></div>
+        <div class="auth-head">
+          <h1 id="auth-title">Anmelden</h1>
+          <p id="auth-sub" class="auth-sub"></p>
+        </div>
+        <form id="auth-form" class="auth-form" novalidate>
+          <label class="field" id="f-email"><span>E-Mail</span><input id="auth-email" type="email" autocomplete="email" inputmode="email" placeholder="name@beispiel.de"></label>
+          <label class="field" id="f-pass"><span>Passwort</span><input id="auth-pass" type="password" autocomplete="current-password" minlength="6" placeholder="Mindestens 6 Zeichen"></label>
+          <label class="field" id="f-pass2" hidden><span>Passwort wiederholen</span><input id="auth-pass2" type="password" autocomplete="new-password" minlength="6"></label>
+          <p id="auth-msg" class="auth-msg" role="alert"></p>
+          <button class="btn primary block" id="auth-submit" type="submit">Anmelden</button>
+        </form>
+        <div class="auth-links">
+          <button type="button" class="link" id="auth-forgot">Passwort vergessen?</button>
+          <p id="auth-switch"></p>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- Bibliothek -->
-  <section id="library" class="view">
+  <section id="library" class="view hidden">
     <header class="lib-header">
       <div class="brand"><img src="icon.svg" alt="" width="28" height="28"><span>Jelly Notes</span></div>
       <div class="lib-search">
@@ -26,6 +50,7 @@
         <button class="btn ghost" id="btn-import-pdf"><span data-icon="upload"></span><span class="lbl">PDF importieren</span></button>
         <button class="btn ghost" id="btn-import-backup"><span data-icon="file"></span><span class="lbl">Backup laden</span></button>
         <button class="btn primary" id="btn-new"><span data-icon="plus"></span><span class="lbl">Neu</span></button>
+        <button class="ibtn" id="btn-account" title="Konto" hidden><span data-icon="user"></span></button>
       </div>
     </header>
     <main class="lib-main">

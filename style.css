@@ -9,6 +9,7 @@
   --accent: #2f6fde;
   --accent-soft: rgba(47, 111, 222, .12);
   --danger: #d0312d;
+  --ok: #1e8a4c;
   --shadow: 0 1px 2px rgba(0,0,0,.06), 0 4px 16px rgba(0,0,0,.08);
   --shadow-lg: 0 10px 40px rgba(0,0,0,.18);
   --radius: 12px;
@@ -25,6 +26,7 @@
     --line: rgba(255, 255, 255, .1);
     --accent: #5b93ff;
     --accent-soft: rgba(91, 147, 255, .18);
+    --ok: #4cc27f;
     --shadow: 0 1px 2px rgba(0,0,0,.4), 0 4px 16px rgba(0,0,0,.35);
     color-scheme: dark;
   }
@@ -39,6 +41,7 @@
     --line: rgba(255, 255, 255, .1);
     --accent: #5b93ff;
     --accent-soft: rgba(91, 147, 255, .18);
+    --ok: #4cc27f;
     --shadow: 0 1px 2px rgba(0,0,0,.4), 0 4px 16px rgba(0,0,0,.35);
     color-scheme: dark;
 }
@@ -84,6 +87,33 @@ input { font: inherit; color: inherit; }
 .ibtn.active { background: var(--accent-soft); color: var(--accent); }
 .ibtn.sm { width: 30px; height: 30px; }
 .ibtn.sm .ic { width: 18px; height: 18px; }
+
+/* ---------- Anmeldung ---------- */
+#auth { overflow-y: auto; }
+.auth-wrap {
+  min-height: 100%; display: flex; align-items: center; justify-content: center;
+  padding-block: 32px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.auth-card {
+  width: 100%; max-width: 400px; background: var(--surface); border-radius: 18px;
+  box-shadow: var(--shadow); padding: 28px; display: flex; flex-direction: column; gap: 20px;
+}
+.auth-head h1 { margin: 0 0 6px; font-size: 24px; letter-spacing: -.01em; text-wrap: balance; }
+.auth-sub { margin: 0; color: var(--text-2); }
+.auth-form { display: flex; flex-direction: column; gap: 14px; }
+.auth-form .field[hidden] { display: none; }
+.auth-msg { margin: 0; min-height: 0; color: var(--danger); font-size: 14px; }
+.auth-msg:empty { display: none; }
+.auth-msg.ok { color: var(--ok); }
+.btn.block { width: 100%; justify-content: center; padding: 11px 14px; }
+.btn:disabled { opacity: .6; cursor: wait; }
+.auth-links { display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 14px; color: var(--text-2); }
+.auth-links p { margin: 0; }
+.auth-links p:empty { display: none; }
+.link { border: 0; background: none; padding: 0; color: var(--accent); font-weight: 550; cursor: pointer; }
+.link:hover { text-decoration: underline; }
+.link[hidden] { display: none; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 /* ---------- Bibliothek ---------- */
 .lib-header {

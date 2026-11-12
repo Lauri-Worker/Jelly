@@ -67,6 +67,17 @@ export const db = {
     return done(tx);
   },
 
+  /** Ändert Titel/Cover, ohne die Bilder des Notizbuchs zu laden. */
+  async patchNotebook(id, patch) {
+    const d = await open();
+    const tx = d.transaction(['notebooks', 'meta'], 'readwrite');
+    const nb = await req2p(tx.objectStore('notebooks').get(id));
+    const meta = await req2p(tx.objectStore('meta').get(id));
+    if (nb) tx.objectStore('notebooks').put(Object.assign(nb, patch));
+    if (meta) tx.objectStore('meta').put(Object.assign(meta, patch, { updatedAt: Date.now() }));
+    return done(tx);
+  },
+
   async deleteAssets(nbId, keys) {
     if (!keys.length) return;
     const d = await open();

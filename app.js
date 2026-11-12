@@ -1,4 +1,8 @@
-import { db } from './db.js';
+import { db as localDb } from './db.js';
+import { cloud, auth, cloudConfigured } from './cloud.js';
+
+/** Aktiver Speicher: lokal (IndexedDB) oder Cloud (Supabase, nach Anmeldung). */
+let db = localDb;
 
 /* =====================================================================
    Konstanten
@@ -31,6 +35,8 @@ const ICONS = {
   sidebar: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/>',
   plus: '<path d="M12 5v14M5 12h14"/>',
   minus: '<path d="M5 12h14"/>',
+  user: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
+  logout: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/>',
   share: '<path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><path d="m16 6-4-4-4 4"/><path d="M12 2v13"/>',
   page: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/>',
   file: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 15h6"/>',
@@ -533,7 +539,7 @@ function setSaveStatus(t) { $('#save-status').textContent = t; }
 function scheduleSave() {
   setSaveStatus('Nicht gespeichert');
   clearTimeout(saveTimer);
-  saveTimer = setTimeout(saveNow, 700);
+  saveTimer = setTimeout(saveNow, db === cloud ? 1500 : 700);
 }
 async function makeThumb(nb, width = 260) {
   const page = nb.pages[0];
@@ -564,7 +570,9 @@ function saveNow() {
   }).catch((err) => {
     console.error(err);
     setSaveStatus('Fehler beim Speichern');
-    toast('Speichern fehlgeschlagen: ' + (err?.message || err), 5000);
+    toast('Speichern fehlgeschlagen: ' + (err?.message || err) + ' – neuer Versuch in 5 s', 5000);
+    // Erneut versuchen; noch nicht hochgeladene Bilder bleiben vorgemerkt
+    setTimeout(() => { if (state.nb === nb && !saveTimer) scheduleSave(); }, 5000);
   });
   return savePromise;
 }
@@ -596,6 +604,7 @@ async function showLibrary() {
     imgCache.clear();
   }
   $('#editor').classList.add('hidden');
+  $('#auth').classList.add('hidden');
   $('#library').classList.remove('hidden');
   document.title = 'Jelly Notes';
   if (location.hash) history.replaceState(null, '', location.pathname + location.search);
@@ -645,9 +654,7 @@ function notebookMenu(anchor, m) {
     { label: 'Umbenennen', icon: 'edit', action: async () => {
       const t = await ask({ title: 'Umbenennen', input: m.title, ok: 'Speichern' });
       if (!t?.trim()) return;
-      const nb = await db.loadNotebook(m.id);
-      nb.title = t.trim();
-      await db.saveNotebook(nb, { ...m, title: nb.title, updatedAt: Date.now() }, []);
+      await db.patchNotebook(m.id, { title: t.trim() });
       renderLibrary();
     } },
     { label: 'Cover ändern', icon: 'grid', action: () => coverMenu(anchor, m) },
@@ -687,9 +694,7 @@ function coverMenu(anchor, m) {
     b.title = c === 'none' ? 'Erste Seite anzeigen' : c;
     b.onclick = async () => {
       closeMenu();
-      const nb = await db.loadNotebook(m.id);
-      nb.cover = c;
-      await db.saveNotebook(nb, { ...m, cover: c }, []);
+      await db.patchNotebook(m.id, { cover: c });
       renderLibrary();
     };
     sw.appendChild(b);
@@ -1973,23 +1978,160 @@ window.addEventListener('pagehide', () => { if (saveTimer) saveNow(); });
 /* =====================================================================
    Start
    ===================================================================== */
-async function init() {
-  const m = location.hash.match(/^#nb=(.+)$/);
-  if (m && (await db.loadNotebook(m[1]))) await openNotebook(m[1]);
-  else {
-    const metas = await db.listMeta();
-    if (!metas.length) {
-      // Willkommens-Notizbuch beim ersten Start
-      const nb = newNotebook({ title: 'Mein erstes Notizbuch', cover: COVERS[4], paper: 'lined' });
-      const p = nb.pages[0];
-      p.items.push({ id: uid(), type: 'text', x: 96, y: 52, size: 30, color: PEN_COLORS[0], text: 'Willkommen bei Jelly Notes 👋' });
-      p.items.push({ id: uid(), type: 'text', x: 96, y: 136, size: 20, color: PEN_COLORS[1], text:
-        'Schreibe mit dem Stift, markiere mit dem Textmarker,\nradiere ganze Striche weg und verschiebe Inhalte mit dem Lasso.\n\nTipp: Importiere PDFs, um sie zu annotieren.' });
-      p.items.forEach(measureText);
-      await saveFresh(nb);
-    }
-    showLibrary();
+async function startApp() {
+  const m = location.hash.match(/^#nb=([\w-]+)$/);
+  if (m) return openNotebook(m[1]);
+  const metas = await db.listMeta();
+  if (!metas.length) {
+    // Willkommens-Notizbuch beim ersten Start
+    const nb = newNotebook({ title: 'Mein erstes Notizbuch', cover: COVERS[4], paper: 'lined' });
+    const p = nb.pages[0];
+    p.items.push({ id: uid(), type: 'text', x: 96, y: 52, size: 30, color: PEN_COLORS[0], text: 'Willkommen bei Jelly Notes 👋' });
+    p.items.push({ id: uid(), type: 'text', x: 96, y: 136, size: 20, color: PEN_COLORS[1], text:
+      'Schreibe mit dem Stift, markiere mit dem Textmarker,\nradiere ganze Striche weg und verschiebe Inhalte mit dem Lasso.\n\nTipp: Importiere PDFs, um sie zu annotieren.' });
+    p.items.forEach(measureText);
+    await saveFresh(nb);
   }
+  showLibrary();
+}
+
+/* ---------- Konten (nur wenn Supabase in config.js eingetragen ist) ---------- */
+let authMode = 'signin';
+const AUTH_TEXT = {
+  signin: { title: 'Anmelden', sub: 'Melde dich an, um deine Notizbücher auf jedem Gerät zu öffnen.', btn: 'Anmelden' },
+  signup: { title: 'Konto erstellen', sub: 'Mit einem Konto sind deine Notizbücher sicher gespeichert und überall verfügbar.', btn: 'Konto erstellen' },
+  reset: { title: 'Passwort vergessen', sub: 'Gib deine E-Mail-Adresse ein. Wir schicken dir einen Link zum Zurücksetzen.', btn: 'Link senden' },
+  recovery: { title: 'Neues Passwort', sub: 'Wähle ein neues Passwort für dein Konto.', btn: 'Passwort speichern' },
+};
+function authMessage(err) {
+  const m = String(err?.message || err || '');
+  if (/invalid login credentials/i.test(m)) return 'E-Mail oder Passwort ist falsch.';
+  if (/email not confirmed/i.test(m)) return 'Bitte bestätige zuerst deine E-Mail-Adresse. Den Link findest du in deinem Postfach.';
+  if (/already registered|already exists/i.test(m)) return 'Für diese E-Mail gibt es schon ein Konto. Melde dich stattdessen an.';
+  if (/at least 6|password should be/i.test(m)) return 'Das Passwort muss mindestens 6 Zeichen lang sein.';
+  if (/rate limit|too many/i.test(m)) return 'Zu viele Versuche. Warte ein paar Minuten und versuche es dann erneut.';
+  if (/invalid.*email|email.*invalid/i.test(m)) return 'Diese E-Mail-Adresse ist ungültig.';
+  if (/failed to fetch|network/i.test(m)) return 'Keine Verbindung zum Server. Prüfe deine Internetverbindung.';
+  return m || 'Etwas ist schiefgelaufen. Bitte versuche es erneut.';
+}
+function setAuthMode(mode, msg = '', ok = false) {
+  authMode = mode;
+  const t = AUTH_TEXT[mode];
+  $('#auth-title').textContent = t.title;
+  $('#auth-sub').textContent = t.sub;
+  $('#auth-submit').textContent = t.btn;
+  $('#f-email').hidden = mode === 'recovery';
+  $('#auth-email').required = mode !== 'recovery';
+  $('#f-pass').hidden = mode === 'reset';
+  $('#auth-pass').required = mode !== 'reset';
+  $('#auth-pass').autocomplete = mode === 'signin' ? 'current-password' : 'new-password';
+  $('#f-pass2').hidden = !(mode === 'signup' || mode === 'recovery');
+  $('#auth-pass2').required = !$('#f-pass2').hidden;
+  $('#auth-forgot').hidden = mode !== 'signin';
+  $('#auth-switch').innerHTML = mode === 'signin'
+    ? 'Noch kein Konto? <button type="button" class="link" data-mode="signup">Registrieren</button>'
+    : mode === 'recovery' ? '' : 'Schon ein Konto? <button type="button" class="link" data-mode="signin">Anmelden</button>';
+  const el = $('#auth-msg');
+  el.textContent = msg;
+  el.className = 'auth-msg' + (ok ? ' ok' : '');
+  $('#auth-pass').value = '';
+  $('#auth-pass2').value = '';
+}
+function showAuth(mode = 'signin', msg = '', ok = false) {
+  $('#library').classList.add('hidden');
+  $('#editor').classList.add('hidden');
+  $('#auth').classList.remove('hidden');
+  document.title = 'Anmelden – Jelly Notes';
+  setAuthMode(mode, msg, ok);
+  if (mode !== 'recovery') $('#auth-email').focus();
+  else $('#auth-pass').focus();
+}
+async function enterAccount() {
+  db = cloud;
+  $('#btn-account').hidden = false;
+  $('#auth').classList.add('hidden');
+  try { await startApp(); } catch (err) {
+    console.error(err);
+    showAuth('signin', 'Deine Notizbücher konnten nicht geladen werden: ' + authMessage(err));
+  }
+}
+async function signOut() {
+  if (state.nb) { await saveNow(); state.nb = null; imgCache.clear(); }
+  await auth.signOut();
+  $('#nb-grid').innerHTML = '';
+  if (location.hash) history.replaceState(null, '', location.pathname + location.search);
+  showAuth('signin', 'Du wurdest abgemeldet.', true);
+}
+$('#auth-switch').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-mode]');
+  if (b) setAuthMode(b.dataset.mode);
+});
+$('#auth-forgot').onclick = () => setAuthMode('reset');
+$('#auth-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const email = $('#auth-email').value.trim();
+  const pass = $('#auth-pass').value;
+  const msg = $('#auth-msg');
+  if ((authMode === 'signup' || authMode === 'recovery') && pass !== $('#auth-pass2').value) {
+    msg.className = 'auth-msg';
+    msg.textContent = 'Die Passwörter stimmen nicht überein.';
+    return;
+  }
+  const btn = $('#auth-submit');
+  btn.disabled = true;
+  msg.className = 'auth-msg';
+  msg.textContent = '';
+  try {
+    if (authMode === 'signin') {
+      await auth.signIn(email, pass);
+      await enterAccount();
+    } else if (authMode === 'signup') {
+      const d = await auth.signUp(email, pass);
+      if (d.session) await enterAccount();
+      else setAuthMode('signin', `Fast geschafft! Wir haben dir eine E-Mail an ${email} geschickt. Klicke auf den Link darin, dann kannst du dich anmelden.`, true);
+    } else if (authMode === 'reset') {
+      await auth.resetPassword(email);
+      setAuthMode('signin', `Falls ein Konto für ${email} existiert, ist der Link zum Zurücksetzen unterwegs.`, true);
+    } else if (authMode === 'recovery') {
+      await auth.updatePassword(pass);
+      toast('Passwort geändert');
+      await enterAccount();
+    }
+  } catch (err) {
+    console.error(err);
+    msg.className = 'auth-msg';
+    msg.textContent = authMessage(err);
+  } finally {
+    btn.disabled = false;
+  }
+});
+$('#btn-account').onclick = (e) => openMenu(e.currentTarget, [
+  { label: auth.user?.email || 'Konto', icon: 'user', action: () => {} },
+  '-',
+  { label: 'Abmelden', icon: 'logout', action: signOut },
+]);
+
+async function init() {
+  if (!cloudConfigured) return startApp();
+  // Vor auth.init merken: Supabase entfernt die Token aus der Adresse
+  const recovery = /type=recovery/.test(location.hash);
+  let session;
+  try {
+    session = await auth.init((event) => {
+      if (event === 'PASSWORD_RECOVERY') showAuth('recovery');
+      else if (event === 'SIGNED_OUT' && db === cloud && $('#auth').classList.contains('hidden')) {
+        // In einem anderen Tab abgemeldet
+        state.nb = null;
+        showAuth('signin', 'Du wurdest abgemeldet.', true);
+      }
+    });
+  } catch (err) {
+    showAuth('signin', authMessage(err));
+    return;
+  }
+  if (recovery) return showAuth('recovery');
+  if (session) enterAccount();
+  else showAuth('signin');
 }
 init();
 
