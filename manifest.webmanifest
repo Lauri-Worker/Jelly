@@ -1,0 +1,15 @@
+{
+  "name": "Jelly Notes",
+  "short_name": "Jelly Notes",
+  "description": "Handschriftliche Notizen und PDF-Annotationen im Browser.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f5f4f0",
+  "theme_color": "#f5f4f0",
+  "lang": "de",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

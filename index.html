@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#f5f4f0">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="description" content="Handschriftliche Notizen, PDFs annotieren und Notizbücher organisieren – direkt im Browser.">
+  <title>Jelly Notes</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon.svg">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Bibliothek -->
+  <section id="library" class="view">
+    <header class="lib-header">
+      <div class="brand"><img src="icon.svg" alt="" width="28" height="28"><span>Jelly Notes</span></div>
+      <div class="lib-search">
+        <span class="search-ic" data-icon="search"></span>
+        <input id="search" type="search" placeholder="Suchen" autocomplete="off">
+      </div>
+      <div class="lib-actions">
+        <button class="btn ghost" id="btn-import-pdf"><span data-icon="upload"></span><span class="lbl">PDF importieren</span></button>
+        <button class="btn ghost" id="btn-import-backup"><span data-icon="file"></span><span class="lbl">Backup laden</span></button>
+        <button class="btn primary" id="btn-new"><span data-icon="plus"></span><span class="lbl">Neu</span></button>
+      </div>
+    </header>
+    <main class="lib-main">
+      <h1>Dokumente</h1>
+      <div id="nb-grid" class="nb-grid"></div>
+    </main>
+  </section>
+
+  <!-- Editor -->
+  <section id="editor" class="view hidden">
+    <header class="topbar">
+      <div class="tb-group">
+        <button class="ibtn" id="btn-back" title="Zur Bibliothek"><span data-icon="back"></span></button>
+        <button class="ibtn" id="btn-sidebar" title="Seitenübersicht"><span data-icon="sidebar"></span></button>
+        <input id="nb-title" class="title-input" spellcheck="false" aria-label="Titel">
+        <span id="save-status" class="save-status"></span>
+      </div>
+      <div class="tb-group">
+        <button class="ibtn" id="btn-undo" title="Rückgängig (Strg+Z)"><span data-icon="undo"></span></button>
+        <button class="ibtn" id="btn-redo" title="Wiederholen (Strg+Umschalt+Z)"><span data-icon="redo"></span></button>
+        <span class="tb-sep"></span>
+        <button class="ibtn" id="btn-page" title="Seite"><span data-icon="page"></span></button>
+        <button class="ibtn" id="btn-export" title="Exportieren"><span data-icon="share"></span></button>
+        <button class="ibtn" id="btn-more" title="Einstellungen"><span data-icon="more"></span></button>
+      </div>
+    </header>
+    <div class="toolrow">
+      <div class="tools" id="tools">
+        <button class="tool" data-tool="pen" title="Stift (P)"><span data-icon="pen"></span></button>
+        <button class="tool" data-tool="highlighter" title="Textmarker (H)"><span data-icon="highlighter"></span></button>
+        <button class="tool" data-tool="eraser" title="Radierer (E)"><span data-icon="eraser"></span></button>
+        <button class="tool" data-tool="lasso" title="Lasso (L)"><span data-icon="lasso"></span></button>
+        <button class="tool" data-tool="shape" title="Formen (S)"><span data-icon="shapes"></span></button>
+        <button class="tool" data-tool="text" title="Text (T)"><span data-icon="text"></span></button>
+        <button class="tool" id="btn-image" title="Bild einfügen"><span data-icon="image"></span></button>
+      </div>
+      <div class="options" id="options"></div>
+    </div>
+    <div class="editor-body">
+      <aside id="sidebar">
+        <div id="thumbs"></div>
+        <button class="btn ghost small add-thumb" id="btn-add-page-side"><span data-icon="plus"></span>Seite</button>
+      </aside>
+      <div id="viewer">
+        <div id="pages"></div>
+        <div class="pages-end"><button class="btn ghost" id="btn-add-page-end"><span data-icon="plus"></span>Seite hinzufügen</button></div>
+      </div>
+      <div class="floating zoom-ctl">
+        <button class="ibtn sm" id="btn-zoom-out" title="Verkleinern"><span data-icon="minus"></span></button>
+        <button class="zoom-val" id="btn-zoom-fit" title="An Breite anpassen">100%</button>
+        <button class="ibtn sm" id="btn-zoom-in" title="Vergrößern"><span data-icon="plus"></span></button>
+      </div>
+      <div class="floating page-ind" id="page-ind">1 / 1</div>
+    </div>
+  </section>
+
+  <!-- Neues Notizbuch -->
+  <dialog id="dlg-new">
+    <form method="dialog" class="dlg">
+      <h2>Neues Notizbuch</h2>
+      <label class="field"><span>Titel</span><input id="new-title" required maxlength="80" placeholder="Unbenanntes Notizbuch"></label>
+      <div class="field"><span>Cover</span><div class="swatches" id="new-covers"></div></div>
+      <div class="field"><span>Papier</span><div class="paper-grid" id="new-papers"></div></div>
+      <div class="field-row">
+        <div class="field"><span>Papierfarbe</span><div class="seg" id="new-pcolor"></div></div>
+        <div class="field"><span>Format</span><div class="seg" id="new-orient"></div></div>
+      </div>
+      <div class="dlg-actions">
+        <button class="btn ghost" value="cancel" formnovalidate>Abbrechen</button>
+        <button class="btn primary" value="ok" id="new-ok">Erstellen</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div id="toast" role="status" aria-live="polite"></div>
+
+  <input type="file" id="file-pdf" accept="application/pdf" hidden>
+  <input type="file" id="file-pdf-append" accept="application/pdf" hidden>
+  <input type="file" id="file-backup" accept="application/json,.json" hidden>
+  <input type="file" id="file-image" accept="image/*" hidden>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
