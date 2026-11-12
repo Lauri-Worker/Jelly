@@ -71,6 +71,31 @@ function toast(msg, ms = 2200) {
   if (ms) toast._t = setTimeout(() => t.classList.remove('show'), ms);
 }
 
+/** Eigener Dialog statt confirm/prompt/alert (funktioniert auch in eingebetteten Ansichten). */
+function ask({ title, message = '', input = null, ok = 'OK', cancel = 'Abbrechen', danger = false }) {
+  return new Promise((resolve) => {
+    const dlg = document.createElement('dialog');
+    dlg.innerHTML = `<form method="dialog" class="dlg">
+      <h2>${esc(title)}</h2>
+      ${message ? `<p class="dlg-msg">${esc(message)}</p>` : ''}
+      ${input !== null ? '<input id="ask-input" class="dlg-input" maxlength="80">' : ''}
+      <div class="dlg-actions">
+        ${cancel ? `<button class="btn ghost" value="cancel" formnovalidate>${esc(cancel)}</button>` : ''}
+        <button class="btn ${danger ? 'danger' : 'primary'}" value="ok">${esc(ok)}</button>
+      </div></form>`;
+    document.body.appendChild(dlg);
+    const inp = dlg.querySelector('input');
+    if (inp) inp.value = input;
+    dlg.addEventListener('close', () => {
+      const v = dlg.returnValue === 'ok' ? (inp ? inp.value : true) : (inp ? null : false);
+      dlg.remove();
+      resolve(v);
+    });
+    dlg.showModal();
+    if (inp) { inp.focus(); inp.select(); }
+  });
+}
+
 const scripts = {};
 function loadScript(src) {
   if (!scripts[src]) {
@@ -618,7 +643,7 @@ function notebookMenu(anchor, m) {
   openMenu(anchor, [
     { label: 'Öffnen', icon: 'page', action: () => openNotebook(m.id) },
     { label: 'Umbenennen', icon: 'edit', action: async () => {
-      const t = prompt('Neuer Titel', m.title);
+      const t = await ask({ title: 'Umbenennen', input: m.title, ok: 'Speichern' });
       if (!t?.trim()) return;
       const nb = await db.loadNotebook(m.id);
       nb.title = t.trim();
@@ -641,7 +666,7 @@ function notebookMenu(anchor, m) {
     { label: 'Backup exportieren (.json)', icon: 'download', action: async () => exportBackup(await db.loadNotebook(m.id)) },
     '-',
     { label: 'Löschen', icon: 'trash', danger: true, action: async () => {
-      if (!confirm(`„${m.title}“ wirklich löschen?`)) return;
+      if (!(await ask({ title: 'Notizbuch löschen?', message: `„${m.title}“ wird endgültig gelöscht.`, ok: 'Löschen', danger: true }))) return;
       await db.deleteNotebook(m.id);
       renderLibrary();
       toast('Notizbuch gelöscht');
@@ -1621,9 +1646,9 @@ function duplicatePage(i) {
   state.nb.pages.splice(i + 1, 0, p);
   rebuildAfterPageChange(i + 1);
 }
-function deletePage(i) {
+async function deletePage(i) {
   if (state.nb.pages.length === 1) { toast('Die letzte Seite kann nicht gelöscht werden'); return; }
-  if (!confirm(`Seite ${i + 1} löschen?`)) return;
+  if (!(await ask({ title: `Seite ${i + 1} löschen?`, message: 'Die Seite und ihr Inhalt werden entfernt.', ok: 'Löschen', danger: true }))) return;
   state.nb.pages.splice(i, 1);
   rebuildAfterPageChange(Math.min(i, state.nb.pages.length - 1));
 }
@@ -1893,12 +1918,12 @@ $('#btn-more').onclick = (e) => openMenu(e.currentTarget, [
   } },
   { label: 'Seitenübersicht', icon: 'sidebar', check: state.sidebar, action: () => $('#btn-sidebar').click() },
   '-',
-  { label: 'Tastenkürzel', icon: 'more', action: () => alert(
+  { label: 'Tastenkürzel', icon: 'more', action: () => ask({ title: 'Tastenkürzel', cancel: '', message:
     'P Stift · H Textmarker · E Radierer · L Lasso · S Formen · T Text\n' +
     'Strg+Z Rückgängig · Strg+Umschalt+Z Wiederholen\n' +
     'Strg+C / Strg+V Auswahl kopieren / einfügen · Entf Auswahl löschen\n' +
     'Strg + Mausrad oder Zwei-Finger-Geste: Zoomen\n' +
-    'Umschalt beim Zeichnen von Formen: Quadrat / Kreis') },
+    'Umschalt beim Zeichnen von Formen: Quadrat / Kreis' }) },
 ]);
 
 document.addEventListener('keydown', (e) => {
