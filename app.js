@@ -620,6 +620,15 @@ async function showLibrary() {
   renderLibrary();
 }
 
+/** Helle Coverfarben bekommen dunkle Schrift. */
+function isLightColor(hex) {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex || '');
+  if (!m) return false;
+  const n = parseInt(m[1], 16);
+  const lum = (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255;
+  return lum > 0.68;
+}
+
 /* ---------- Ordner ---------- */
 const FOLDER_COLORS = ['#3a9bd1', '#5b62c9', '#9b59c9', '#d9534f', '#ef8a3c', '#e9c046', '#4fae6a', '#6b7280'];
 let folders = [];
@@ -853,12 +862,16 @@ async function renderLibrary() {
     card.className = 'nb-card folder-card';
     card.innerHTML = `
       <div class="folder-cover" style="--fc:${f.color || FOLDER_COLORS[0]}">
-        <div class="folder-shape"><div class="folder-back"></div><div class="folder-paper"></div><div class="folder-front"><button class="nb-more" title="Optionen">${icon('more')}</button></div></div>
+        <div class="folder-shape">
+          <div class="folder-back"></div>
+          <div class="folder-paper"></div><div class="folder-paper p2"></div>
+          <div class="folder-front">${(() => { const c = childCounts(f.id); const n = c.folders + c.notebooks; return n ? `<span class="folder-count">${n}</span>` : ''; })()}</div>
+        </div>
       </div>
       <div class="nb-info"><div class="txt">
         <div class="nb-title">${esc(f.name)}</div>
         <div class="nb-meta">${q ? esc(where(f.parentId)) : countLabel(childCounts(f.id))}</div>
-      </div></div>`;
+      </div><button class="nb-more" title="Optionen" aria-label="Optionen für ${esc(f.name)}">${icon('more')}</button></div>`;
     card.onclick = (e) => { if (!e.target.closest('.nb-more')) openFolder(f.id); };
     card.querySelector('.nb-more').onclick = (e) => { e.stopPropagation(); folderMenu(e.currentTarget, f); };
     makeDraggable(card, { type: 'folder', id: f.id, name: f.name });
@@ -870,14 +883,13 @@ async function renderLibrary() {
     card.className = 'nb-card';
     const colored = m.cover && m.cover !== 'none';
     card.innerHTML = `
-      <div class="nb-cover ${colored ? 'colored' : 'paper'}" style="--cover:${colored ? m.cover : '#fff'}">
-        ${colored ? `<div class="label">${esc(m.title)}</div>` : (m.thumb ? `<img src="${m.thumb}" alt="">` : '')}
+      <div class="nb-cover ${colored ? 'colored' : 'paper'}${colored && isLightColor(m.cover) ? ' light' : ''}" style="--cover:${colored ? m.cover : '#fff'}">
+        ${colored ? `<span class="nb-cover-title">${esc(m.title)}</span>` : (m.thumb ? `<img src="${m.thumb}" alt="">` : '')}
       </div>
-      <button class="nb-more" title="Optionen">${icon('more')}</button>
       <div class="nb-info"><div class="txt">
         <div class="nb-title">${esc(m.title)}</div>
         <div class="nb-meta">${q ? esc(where(validFolder(m.folderId))) : `${dateFmt.format(m.updatedAt)} · ${m.pageCount} ${m.pageCount === 1 ? 'Seite' : 'Seiten'}`}</div>
-      </div></div>`;
+      </div><button class="nb-more" title="Optionen" aria-label="Optionen für ${esc(m.title)}">${icon('more')}</button></div>`;
     card.onclick = (e) => {
       if (e.target.closest('.nb-more')) return;
       openNotebook(m.id);
