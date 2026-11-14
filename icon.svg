@@ -1,7 +1,31 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="112" fill="#2f6fde"/>
-  <rect x="132" y="104" width="248" height="304" rx="22" fill="#fff"/>
-  <path d="M168 172h176M168 220h176M168 268h120" stroke="#b9cdf3" stroke-width="12" stroke-linecap="round"/>
-  <path d="M188 340c34-44 58-50 72-30s34 18 66-24" fill="none" stroke="#1d1d1f" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M364 128l36 36-118 118-48 12 12-48z" fill="#ffd34d" stroke="#1d1d1f" stroke-width="10" stroke-linejoin="round"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#4c88f2"/>
+      <stop offset="1" stop-color="#2353bf"/>
+    </linearGradient>
+    <linearGradient id="cover" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ff8059"/>
+      <stop offset="1" stop-color="#df4535"/>
+    </linearGradient>
+  </defs>
+  <!-- Hintergrund (vollflächig, iOS rundet die Ecken selbst ab) -->
+  <rect width="1024" height="1024" fill="url(#bg)"/>
+  <!-- Schatten -->
+  <rect x="276" y="196" width="520" height="692" rx="48" fill="#0b1f55" opacity=".28"/>
+  <!-- Seitenblock, rechts sichtbar -->
+  <rect x="300" y="174" width="486" height="682" rx="40" fill="#ffffff"/>
+  <path d="M770 214v602M756 206v618" stroke="#d9dee8" stroke-width="5"/>
+  <!-- Einband -->
+  <rect x="246" y="160" width="514" height="690" rx="44" fill="url(#cover)"/>
+  <!-- Buchrücken -->
+  <path d="M290 160h56v690h-56a44 44 0 0 1-44-44V204a44 44 0 0 1 44-44z" fill="#7a1a12" opacity=".35"/>
+  <path d="M346 160v690" stroke="#ffffff" stroke-opacity=".22" stroke-width="4"/>
+  <!-- Etikett mit Schrift -->
+  <rect x="420" y="296" width="260" height="164" rx="20" fill="#ffffff"/>
+  <path d="M462 352h176M462 404h118" stroke="#b8c8ee" stroke-width="18" stroke-linecap="round"/>
+  <!-- Gummiband -->
+  <rect x="694" y="160" width="28" height="690" fill="#26304a" opacity=".9"/>
+  <!-- Lesebändchen -->
+  <path d="M600 850v86l26-22 26 22v-86z" fill="#ffd34d"/>
 </svg>
