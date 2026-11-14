@@ -2135,6 +2135,51 @@ async function init() {
 }
 init();
 
+/* =====================================================================
+   Offline & automatische Updates
+   ===================================================================== */
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
-  navigator.serviceWorker.register('sw.js').catch(() => {});
+  navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).catch(() => {});
 }
+
+// Erkennt neue Versionen auf dem Server (z.B. nach einem Push auf GitHub)
+// anhand von ETag/Last-Modified und lädt die App dann neu. Funktioniert ohne
+// Versionsnummern, die man von Hand hochzählen müsste.
+const UPDATE_FILES = ['./', 'app.js', 'style.css', 'db.js', 'cloud.js'];
+let versionSig = null;
+let updating = false;
+async function serverSignature() {
+  const parts = await Promise.all(UPDATE_FILES.map(async (f) => {
+    const r = await fetch(f, { method: 'HEAD', cache: 'no-store' });
+    if (!r.ok) return '';
+    return r.headers.get('etag') || r.headers.get('last-modified') || '';
+  }));
+  return parts.every((p) => !p) ? null : parts.join('|');
+}
+async function checkForUpdate() {
+  if (updating || !navigator.onLine || !location.protocol.startsWith('http')) return;
+  try {
+    const sig = await serverSignature();
+    if (!sig) return;
+    if (versionSig === null) { versionSig = sig; return; }
+    if (sig === versionSig) return;
+    updating = true;
+    if (editing) closeTextEditor();
+    if (state.nb) await saveNow();
+    try { sessionStorage.setItem('jelly.updated', '1'); } catch { /* */ }
+    toast('Neue Version wird installiert …', 0);
+    const reg = await navigator.serviceWorker?.getRegistration();
+    await reg?.update().catch(() => {});
+    setTimeout(() => location.reload(), 400);
+  } catch { /* offline oder Server nicht erreichbar */ }
+}
+checkForUpdate();
+document.addEventListener('visibilitychange', () => { if (!document.hidden) checkForUpdate(); });
+window.addEventListener('online', checkForUpdate);
+setInterval(checkForUpdate, 15 * 60 * 1000);
+try {
+  if (sessionStorage.getItem('jelly.updated')) {
+    sessionStorage.removeItem('jelly.updated');
+    setTimeout(() => toast('App wurde aktualisiert'), 800);
+  }
+} catch { /* */ }

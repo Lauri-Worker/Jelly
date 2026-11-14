@@ -56,7 +56,9 @@ Die App besteht nur aus statischen Dateien. Jeder dieser kostenlosen Dienste fun
   firebase deploy --only hosting --project DEINE-PROJEKT-ID
   ```
   Die App läuft danach unter `https://DEINE-PROJEKT-ID.web.app`.
-- **GitHub Pages:** nur bei öffentlichem Repo oder kostenpflichtigem GitHub-Plan.
+- **GitHub Pages:** nur bei öffentlichem Repo oder kostenpflichtigem GitHub-Plan. Unter **Settings → Pages** „Deploy from a branch“ und den Branch mit dem Code wählen. Die App läuft dann unter `https://lauri-worker.github.io/Jelly/`.
+
+**Updates:** Die App prüft beim Öffnen, beim Zurückkehren in die App und alle 15 Minuten, ob auf dem Server eine neue Version liegt. Ist das so, speichert sie das offene Notizbuch, lädt sich neu und zeigt „App wurde aktualisiert“. Versionsnummern muss man dafür nicht pflegen.
 
 Danach öffnet sich die App unter der Adresse des Dienstes in Safari, Chrome und jedem anderen Browser.
 

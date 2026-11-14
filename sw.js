@@ -1,5 +1,5 @@
 // Offline-Unterstützung: alles network-first mit Cache als Fallback.
-const CACHE = 'jelly-notes-v3';
+const CACHE = 'jelly-notes-v4';
 const SHELL = ['./', './index.html', './style.css', './app.js', './db.js', './icon.svg', './apple-touch-icon.png', './icon-192.png', './icon-512.png', './manifest.webmanifest', './cloud.js', './config.js', './vendor/supabase.js',
   './vendor/jspdf.umd.min.js', './vendor/pdf.min.js', './vendor/pdf.worker.min.js'];
 
@@ -18,9 +18,12 @@ self.addEventListener('fetch', (e) => {
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
   if (url.origin === location.origin) {
+    // Immer beim Server nachfragen (no-cache), damit Updates sofort ankommen
+    const fresh = req.mode === 'navigate' ? fetch(req.url, { cache: 'no-cache', credentials: 'same-origin' }) : fetch(req, { cache: 'no-cache' });
     e.respondWith(
-      fetch(req)
+      fresh
         .then((res) => {
+          if (!res.ok) return res;
           const copy = res.clone();
           caches.open(CACHE).then((c) => c.put(req, copy));
           return res;
