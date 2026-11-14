@@ -94,7 +94,9 @@ export const db = {
     const nb = await req2p(tx.objectStore('notebooks').get(id));
     const meta = await req2p(tx.objectStore('meta').get(id));
     if (nb) tx.objectStore('notebooks').put(Object.assign(nb, patch));
-    if (meta) tx.objectStore('meta').put(Object.assign(meta, patch, { updatedAt: Date.now() }));
+    // Favorit setzen ändert nicht das Bearbeitungsdatum
+    const stamp = 'favorite' in patch && Object.keys(patch).length === 1 ? {} : { updatedAt: Date.now() };
+    if (meta) tx.objectStore('meta').put(Object.assign(meta, patch, stamp));
     return done(tx);
   },
 

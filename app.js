@@ -45,6 +45,9 @@ const ICONS = {
   camera: '<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3z"/><circle cx="12" cy="13" r="3.5"/>',
   scan: '<path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 12h10"/>',
   pdf: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h2.5a1.5 1.5 0 0 1 0 3H8v-3zm0 3v2"/>',
+  star: '<path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/>',
+  chev: '<path d="m6 9 6 6 6-6"/>',
+  filter: '<path d="M4 6h16M7 12h10M10 18h4"/>',
   share: '<path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><path d="m16 6-4-4-4 4"/><path d="M12 2v13"/>',
   page: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/>',
   file: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 15h6"/>',
@@ -203,6 +206,7 @@ const state = {
   selection: null,
   savedAssets: new Set(),
   libFolder: null, // geöffneter Ordner in der Bibliothek (null = oberste Ebene)
+  libFilter: 'all', // 'all' | 'fav'
 };
 let clipboard = null;
 
@@ -550,7 +554,7 @@ function scheduleSave() {
   clearTimeout(saveTimer);
   saveTimer = setTimeout(saveNow, db === cloud ? 1500 : 700);
 }
-async function makeThumb(nb, width = 260) {
+async function makeThumb(nb, width = 480) {
   const page = nb.pages[0];
   await preloadPage(page, nb);
   const c = document.createElement('canvas');
@@ -562,7 +566,8 @@ async function makeThumb(nb, width = 260) {
   return c.toDataURL('image/jpeg', 0.8);
 }
 function metaOf(nb, thumb) {
-  return { id: nb.id, title: nb.title, cover: nb.cover, folderId: nb.folderId || null, createdAt: nb.createdAt, updatedAt: nb.updatedAt, pageCount: nb.pages.length, thumb };
+  const p0 = nb.pages[0];
+  return { id: nb.id, title: nb.title, cover: nb.cover, kind: nb.kind || 'notebook', favorite: !!nb.favorite, ratio: p0 ? p0.h / p0.w : PAGE_H / PAGE_W, folderId: nb.folderId || null, createdAt: nb.createdAt, updatedAt: nb.updatedAt, pageCount: nb.pages.length, thumb };
 }
 function saveNow() {
   clearTimeout(saveTimer);
@@ -667,6 +672,7 @@ function countLabel({ folders: f, notebooks: n }) {
 }
 function openFolder(id) {
   state.libFolder = validFolder(id);
+  state.libFilter = 'all';
   $('#search').value = '';
   renderLibrary();
   $('.lib-main').scrollTop = 0;
@@ -815,12 +821,12 @@ function makeDropTarget(el, folderId) {
   });
 }
 
-function renderCrumbs(q) {
+function renderCrumbs(q, fav) {
   const el = $('#crumbs');
   const path = folderPath(state.libFolder);
-  $('#lib-title').textContent = q ? 'Suchergebnisse' : (path.length ? path[path.length - 1].name : 'Dokumente');
+  $('#lib-title').textContent = q ? 'Suchergebnisse' : fav ? 'Favoriten' : (path.length ? path[path.length - 1].name : 'Dokumente');
   el.innerHTML = '';
-  el.hidden = !path.length || !!q;
+  el.hidden = !path.length || !!q || !!fav;
   if (el.hidden) return;
   const crumbs = [{ id: null, name: 'Dokumente' }, ...path.slice(0, -1)];
   crumbs.forEach((c, i) => {
@@ -837,16 +843,21 @@ function renderCrumbs(q) {
 
 async function renderLibrary() {
   const q = $('#search').value.trim().toLowerCase();
+  const fav = state.libFilter === 'fav';
   const [metas, fl] = await Promise.all([db.listMeta(), db.listFolders()]);
   folders = fl;
   lastMetas = metas;
   if (state.libFolder && !folderById(state.libFolder)) state.libFolder = null;
   const cur = state.libFolder;
-  renderCrumbs(q);
+  renderCrumbs(q, fav);
+  $('#lib-filter-label').textContent = fav ? 'Favoriten' : 'Alle';
   let shownFolders, shownNbs;
   if (q) {
-    shownFolders = folders.filter((f) => f.name.toLowerCase().includes(q));
-    shownNbs = metas.filter((m) => m.title.toLowerCase().includes(q));
+    shownFolders = folders.filter((f) => f.name.toLowerCase().includes(q) && (!fav || f.favorite));
+    shownNbs = metas.filter((m) => m.title.toLowerCase().includes(q) && (!fav || m.favorite));
+  } else if (fav) {
+    shownFolders = folders.filter((f) => f.favorite);
+    shownNbs = metas.filter((m) => m.favorite);
   } else {
     shownFolders = folders.filter((f) => validFolder(f.parentId) === cur);
     shownNbs = metas.filter((m) => validFolder(m.folderId) === cur);
@@ -854,26 +865,37 @@ async function renderLibrary() {
   shownFolders.sort((a, b) => a.name.localeCompare(b.name, 'de'));
   shownNbs.sort((a, b) => b.updatedAt - a.updatedAt);
   const where = (id) => folderPath(id).map((f) => f.name).join(' › ') || 'Dokumente';
+  const star = (on, label) => `<button class="star${on ? ' on' : ''}" title="${on ? 'Aus Favoriten entfernen' : 'Zu Favoriten'}" aria-label="${label} ${on ? 'aus Favoriten entfernen' : 'zu Favoriten hinzufügen'}" aria-pressed="${on}">${icon('star')}</button>`;
+  const label = (title, meta) => `
+    <div class="nb-info">
+      <div class="item-title"><span class="nb-title">${esc(title)}</span><button class="nb-more" title="Optionen" aria-label="Optionen für ${esc(title)}">${icon('chev')}</button></div>
+      <div class="nb-meta">${meta}</div>
+    </div>`;
 
   const grid = $('#nb-grid');
   grid.innerHTML = '';
   for (const f of shownFolders) {
     const card = document.createElement('div');
     card.className = 'nb-card folder-card';
+    const c = childCounts(f.id);
+    const n = c.folders + c.notebooks;
     card.innerHTML = `
-      <div class="folder-cover" style="--fc:${f.color || FOLDER_COLORS[0]}">
-        <div class="folder-shape">
-          <div class="folder-back"></div>
-          <div class="folder-paper"></div><div class="folder-paper p2"></div>
-          <div class="folder-front">${(() => { const c = childCounts(f.id); const n = c.folders + c.notebooks; return n ? `<span class="folder-count">${n}</span>` : ''; })()}</div>
+      <div class="item-slot">
+        <div class="folder-ico" style="--fc:${f.color || FOLDER_COLORS[0]}">
+          <div class="folder-ico-back"></div>
+          <div class="folder-ico-front">${n ? `<span class="folder-count">${n}</span>` : ''}</div>
+          ${star(!!f.favorite, esc(f.name))}
         </div>
       </div>
-      <div class="nb-info"><div class="txt">
-        <div class="nb-title">${esc(f.name)}</div>
-        <div class="nb-meta">${q ? esc(where(f.parentId)) : countLabel(childCounts(f.id))}</div>
-      </div><button class="nb-more" title="Optionen" aria-label="Optionen für ${esc(f.name)}">${icon('more')}</button></div>`;
-    card.onclick = (e) => { if (!e.target.closest('.nb-more')) openFolder(f.id); };
+      ${label(f.name, q || fav ? esc(where(f.parentId)) : dateFmt.format(f.updatedAt || f.createdAt))}`;
+    card.onclick = (e) => { if (!e.target.closest('.nb-more, .star')) openFolder(f.id); };
     card.querySelector('.nb-more').onclick = (e) => { e.stopPropagation(); folderMenu(e.currentTarget, f); };
+    card.querySelector('.star').onclick = async (e) => {
+      e.stopPropagation();
+      f.favorite = !f.favorite;
+      await db.saveFolder(f);
+      renderLibrary();
+    };
     makeDraggable(card, { type: 'folder', id: f.id, name: f.name });
     makeDropTarget(card, f.id);
     grid.appendChild(card);
@@ -881,30 +903,38 @@ async function renderLibrary() {
   for (const m of shownNbs) {
     const card = document.createElement('div');
     card.className = 'nb-card';
-    const colored = m.cover && m.cover !== 'none';
+    const colored = m.cover && m.cover !== 'none' && m.kind !== 'pdf';
+    const ratio = m.ratio || PAGE_H / PAGE_W;
+    const shape = colored ? 'doc-cover' : 'doc-page';
+    const orient = colored || ratio >= 1 ? 'portrait' : 'landscape';
+    const ar = colored ? '3 / 4' : `${1} / ${ratio.toFixed(4)}`;
     card.innerHTML = `
-      <div class="nb-cover ${colored ? 'colored' : 'paper'}${colored && isLightColor(m.cover) ? ' light' : ''}" style="--cover:${colored ? m.cover : '#fff'}">
-        ${colored ? `<span class="nb-cover-title">${esc(m.title)}</span>` : (m.thumb ? `<img src="${m.thumb}" alt="">` : '')}
+      <div class="item-slot">
+        <div class="doc ${shape} ${orient}${colored && isLightColor(m.cover) ? ' light' : ''}" style="--cover:${colored ? m.cover : '#fff'};aspect-ratio:${ar}">
+          ${colored ? '' : (m.thumb ? `<img src="${m.thumb}" alt="" draggable="false">` : '')}
+          ${star(!!m.favorite, esc(m.title))}
+        </div>
       </div>
-      <div class="nb-info"><div class="txt">
-        <div class="nb-title">${esc(m.title)}</div>
-        <div class="nb-meta">${q ? esc(where(validFolder(m.folderId))) : `${dateFmt.format(m.updatedAt)} · ${m.pageCount} ${m.pageCount === 1 ? 'Seite' : 'Seiten'}`}</div>
-      </div><button class="nb-more" title="Optionen" aria-label="Optionen für ${esc(m.title)}">${icon('more')}</button></div>`;
-    card.onclick = (e) => {
-      if (e.target.closest('.nb-more')) return;
-      openNotebook(m.id);
-    };
+      ${label(m.title, q || fav ? esc(where(validFolder(m.folderId))) : dateFmt.format(m.updatedAt))}`;
+    card.onclick = (e) => { if (!e.target.closest('.nb-more, .star')) openNotebook(m.id); };
     card.querySelector('.nb-more').onclick = (e) => { e.stopPropagation(); notebookMenu(e.currentTarget, m); };
+    card.querySelector('.star').onclick = async (e) => {
+      e.stopPropagation();
+      await db.patchNotebook(m.id, { favorite: !m.favorite });
+      renderLibrary();
+    };
     makeDraggable(card, { type: 'notebook', id: m.id, name: m.title });
     grid.appendChild(card);
   }
   if (!shownFolders.length && !shownNbs.length) {
     const msg = q
       ? ['Keine Treffer', `Für „${esc(q)}“ wurde nichts gefunden.`]
-      : cur
-        ? ['Dieser Ordner ist leer', 'Tippe auf <b>+ Neu</b>, um hier ein Notizbuch oder einen Ordner anzulegen, oder verschiebe etwas hierher.']
-        : ['Noch keine Notizbücher', 'Tippe auf <b>+ Neu</b>, um dein erstes Notizbuch anzulegen, ein PDF zu importieren oder ein Dokument zu scannen.'];
-    grid.innerHTML = `<div class="lib-empty"><span class="lib-empty-ic">${icon(q ? 'search' : 'folder')}</span><h2>${msg[0]}</h2><p>${msg[1]}</p></div>`;
+      : fav
+        ? ['Noch keine Favoriten', 'Tippe bei einem Notizbuch, PDF oder Ordner auf den <b>Stern</b>, damit es hier erscheint.']
+        : cur
+          ? ['Dieser Ordner ist leer', 'Tippe auf <b>+ Neu</b>, um hier ein Notizbuch, ein PDF oder einen Ordner anzulegen, oder verschiebe etwas hierher.']
+          : ['Noch keine Dokumente', 'Tippe auf <b>+ Neu</b>, um ein Notizbuch anzulegen, ein PDF hinzuzufügen oder ein Dokument zu scannen.'];
+    grid.innerHTML = `<div class="lib-empty"><span class="lib-empty-ic">${icon(q ? 'search' : fav ? 'star' : 'folder')}</span><h2>${msg[0]}</h2><p>${msg[1]}</p></div>`;
   }
 }
 
@@ -917,7 +947,7 @@ function notebookMenu(anchor, m) {
       await db.patchNotebook(m.id, { title: t.trim() });
       renderLibrary();
     } },
-    { label: 'Cover ändern', icon: 'grid', action: () => coverMenu(anchor, m) },
+    ...(m.kind === 'pdf' ? [] : [{ label: 'Cover ändern', icon: 'grid', action: () => coverMenu(anchor, m) }]),
     { label: 'Verschieben nach …', icon: 'move', action: () => moveDialog({ type: 'notebook', id: m.id, name: m.title }) },
     { label: 'Duplizieren', icon: 'copy', action: async () => {
       const nb = await db.loadNotebook(m.id);
@@ -2012,6 +2042,7 @@ async function importPDF(file) {
     toast('PDF wird importiert …', 0);
     const { pages, assets } = await pdfToPages(file, (n, t) => toast(`PDF wird importiert … ${n}/${t}`, 0));
     const nb = newNotebook({ title: file.name.replace(/\.pdf$/i, ''), cover: 'none', folderId: state.libFolder });
+    nb.kind = 'pdf';
     nb.pages = pages;
     nb.assets = assets;
     await saveFresh(nb);
@@ -2328,11 +2359,15 @@ function applySidebar() {
 
 $('#btn-new').onclick = (e) => openMenu(e.currentTarget, [
   { label: 'Notizbuch', icon: 'page', action: openNewDialog },
+  { label: 'PDF hinzufügen', icon: 'pdf', action: () => $('#file-pdf').click() },
   { label: 'Ordner', icon: 'folderPlus', action: createFolder },
   '-',
   { label: 'Dokument scannen', icon: 'scan', action: () => startScan('new', false) },
-  { label: 'PDF importieren', icon: 'pdf', action: () => $('#file-pdf').click() },
   { label: 'Backup laden', icon: 'upload', action: () => $('#file-backup').click() },
+]);
+$('#lib-filter').onclick = (e) => openMenu(e.currentTarget, [
+  { label: 'Alle', icon: 'folder', check: state.libFilter === 'all', action: () => { state.libFilter = 'all'; renderLibrary(); } },
+  { label: 'Favoriten', icon: 'star', check: state.libFilter === 'fav', action: () => { state.libFilter = 'fav'; renderLibrary(); } },
 ]);
 $('#file-pdf').onchange = (e) => { importPDF(e.target.files[0]); e.target.value = ''; };
 $('#file-pdf-append').onchange = (e) => { appendPDF(e.target.files[0]); e.target.value = ''; };
