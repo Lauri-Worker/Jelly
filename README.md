@@ -49,6 +49,13 @@ Die App besteht nur aus statischen Dateien. Jeder dieser kostenlosen Dienste fun
 
 - **Netlify:** auf [app.netlify.com/drop](https://app.netlify.com/drop) den Projektordner ins Browserfenster ziehen. Oder ein neues Projekt aus dem GitHub-Repo anlegen (Build-Befehl leer, Publish-Ordner `.`).
 - **Vercel** oder **Cloudflare Pages:** Projekt aus dem GitHub-Repo importieren, ohne Build-Befehl.
+- **Firebase Hosting (Google):** Die Datei `firebase.json` ist schon vorbereitet. In der [Firebase-Konsole](https://console.firebase.google.com) ein Projekt anlegen, dann im Projektordner:
+  ```bash
+  npm install -g firebase-tools
+  firebase login
+  firebase deploy --only hosting --project DEINE-PROJEKT-ID
+  ```
+  Die App läuft danach unter `https://DEINE-PROJEKT-ID.web.app`.
 - **GitHub Pages:** nur bei öffentlichem Repo oder kostenpflichtigem GitHub-Plan.
 
 Danach öffnet sich die App unter der Adresse des Dienstes in Safari, Chrome und jedem anderen Browser.
