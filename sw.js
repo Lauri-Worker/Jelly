@@ -1,5 +1,5 @@
 // Offline-Unterstützung: alles network-first mit Cache als Fallback.
-const CACHE = 'jelly-notes-v5';
+const CACHE = 'jelly-notes-v6';
 const SHELL = ['./', './index.html', './style.css', './app.js', './db.js', './icon.svg', './apple-touch-icon.png', './icon-192.png', './icon-512.png', './manifest.webmanifest', './cloud.js', './scan.js', './config.js', './vendor/supabase.js',
   './vendor/jspdf.umd.min.js', './vendor/pdf.min.js', './vendor/pdf.worker.min.js'];
 
@@ -17,6 +17,15 @@ self.addEventListener('fetch', (e) => {
   const req = e.request;
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
+  if (url.hostname === 'fonts.googleapis.com' || url.hostname === 'fonts.gstatic.com') {
+    // Schriften: erst Cache, sonst Netz (damit sie auch offline da sind)
+    e.respondWith(caches.match(req).then((hit) => hit || fetch(req).then((res) => {
+      const copy = res.clone();
+      caches.open(CACHE).then((c) => c.put(req, copy));
+      return res;
+    })));
+    return;
+  }
   if (url.origin === location.origin) {
     // Immer beim Server nachfragen (no-cache), damit Updates sofort ankommen
     const fresh = req.mode === 'navigate' ? fetch(req.url, { cache: 'no-cache', credentials: 'same-origin' }) : fetch(req, { cache: 'no-cache' });

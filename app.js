@@ -848,26 +848,13 @@ async function renderLibrary() {
 
   const grid = $('#nb-grid');
   grid.innerHTML = '';
-  if (!q) {
-    const n = document.createElement('div');
-    n.className = 'nb-card nb-new';
-    n.innerHTML = `<div class="nb-cover">${icon('plus')}</div><div class="nb-info"><div class="txt"><div class="nb-title">Neues Notizbuch</div></div></div>`;
-    n.onclick = openNewDialog;
-    grid.appendChild(n);
-    const nf = document.createElement('div');
-    nf.className = 'nb-card nb-new';
-    nf.innerHTML = `<div class="nb-cover">${icon('folderPlus')}</div><div class="nb-info"><div class="txt"><div class="nb-title">Neuer Ordner</div></div></div>`;
-    nf.onclick = createFolder;
-    grid.appendChild(nf);
-  }
   for (const f of shownFolders) {
     const card = document.createElement('div');
     card.className = 'nb-card folder-card';
     card.innerHTML = `
       <div class="folder-cover" style="--fc:${f.color || FOLDER_COLORS[0]}">
-        <div class="folder-shape"><div class="folder-back"></div><div class="folder-paper"></div><div class="folder-front"></div></div>
+        <div class="folder-shape"><div class="folder-back"></div><div class="folder-paper"></div><div class="folder-front"><button class="nb-more" title="Optionen">${icon('more')}</button></div></div>
       </div>
-      <button class="nb-more" title="Optionen">${icon('more')}</button>
       <div class="nb-info"><div class="txt">
         <div class="nb-title">${esc(f.name)}</div>
         <div class="nb-meta">${q ? esc(where(f.parentId)) : countLabel(childCounts(f.id))}</div>
@@ -899,9 +886,13 @@ async function renderLibrary() {
     makeDraggable(card, { type: 'notebook', id: m.id, name: m.title });
     grid.appendChild(card);
   }
-  if (q && !shownFolders.length && !shownNbs.length) grid.innerHTML = '<p class="lib-empty">Keine Treffer.</p>';
-  else if (!q && cur && !shownFolders.length && !shownNbs.length) {
-    grid.insertAdjacentHTML('beforeend', '<p class="lib-empty grid-full">Dieser Ordner ist leer. Erstelle hier ein Notizbuch oder einen Ordner, oder verschiebe etwas hierher.</p>');
+  if (!shownFolders.length && !shownNbs.length) {
+    const msg = q
+      ? ['Keine Treffer', `Für „${esc(q)}“ wurde nichts gefunden.`]
+      : cur
+        ? ['Dieser Ordner ist leer', 'Tippe auf <b>+ Neu</b>, um hier ein Notizbuch oder einen Ordner anzulegen, oder verschiebe etwas hierher.']
+        : ['Noch keine Notizbücher', 'Tippe auf <b>+ Neu</b>, um dein erstes Notizbuch anzulegen, ein PDF zu importieren oder ein Dokument zu scannen.'];
+    grid.innerHTML = `<div class="lib-empty"><span class="lib-empty-ic">${icon(q ? 'search' : 'folder')}</span><h2>${msg[0]}</h2><p>${msg[1]}</p></div>`;
   }
 }
 
@@ -2329,9 +2320,8 @@ $('#btn-new').onclick = (e) => openMenu(e.currentTarget, [
   '-',
   { label: 'Dokument scannen', icon: 'scan', action: () => startScan('new', false) },
   { label: 'PDF importieren', icon: 'pdf', action: () => $('#file-pdf').click() },
+  { label: 'Backup laden', icon: 'upload', action: () => $('#file-backup').click() },
 ]);
-$('#btn-import-pdf').onclick = () => $('#file-pdf').click();
-$('#btn-import-backup').onclick = () => $('#file-backup').click();
 $('#file-pdf').onchange = (e) => { importPDF(e.target.files[0]); e.target.value = ''; };
 $('#file-pdf-append').onchange = (e) => { appendPDF(e.target.files[0]); e.target.value = ''; };
 $('#file-backup').onchange = (e) => { importBackup(e.target.files[0]); e.target.value = ''; };
