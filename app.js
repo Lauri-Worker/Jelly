@@ -37,6 +37,9 @@ const ICONS = {
   minus: '<path d="M5 12h14"/>',
   user: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
   logout: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/>',
+  folder: '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
+  folderPlus: '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M12 10v6M9 13h6"/>',
+  move: '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 13h6"/><path d="m13 11 2 2-2 2"/>',
   share: '<path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><path d="m16 6-4-4-4 4"/><path d="M12 2v13"/>',
   page: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/>',
   file: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 15h6"/>',
@@ -194,6 +197,7 @@ const state = {
   future: [],
   selection: null,
   savedAssets: new Set(),
+  libFolder: null, // geöffneter Ordner in der Bibliothek (null = oberste Ebene)
 };
 let clipboard = null;
 
@@ -212,10 +216,10 @@ function newPage(tpl = {}) {
     items: [],
   };
 }
-function newNotebook({ title, cover = COVERS[4], paper = 'lined', color = 'white', landscape = false } = {}) {
+function newNotebook({ title, cover = COVERS[4], paper = 'lined', color = 'white', landscape = false, folderId = null } = {}) {
   const now = Date.now();
   return {
-    id: uid(), title: title || 'Unbenanntes Notizbuch', cover, createdAt: now, updatedAt: now,
+    id: uid(), title: title || 'Unbenanntes Notizbuch', cover, folderId, createdAt: now, updatedAt: now,
     assets: {}, pages: [newPage({ paper, color, landscape })],
   };
 }
@@ -553,7 +557,7 @@ async function makeThumb(nb, width = 260) {
   return c.toDataURL('image/jpeg', 0.8);
 }
 function metaOf(nb, thumb) {
-  return { id: nb.id, title: nb.title, cover: nb.cover, createdAt: nb.createdAt, updatedAt: nb.updatedAt, pageCount: nb.pages.length, thumb };
+  return { id: nb.id, title: nb.title, cover: nb.cover, folderId: nb.folderId || null, createdAt: nb.createdAt, updatedAt: nb.updatedAt, pageCount: nb.pages.length, thumb };
 }
 function saveNow() {
   clearTimeout(saveTimer);
@@ -611,11 +615,232 @@ async function showLibrary() {
   renderLibrary();
 }
 
+/* ---------- Ordner ---------- */
+const FOLDER_COLORS = ['#3a9bd1', '#5b62c9', '#9b59c9', '#d9534f', '#ef8a3c', '#e9c046', '#4fae6a', '#6b7280'];
+let folders = [];
+let lastMetas = [];
+const folderById = (id) => folders.find((f) => f.id === id);
+/** Ordner-ID, die es wirklich gibt; sonst null (= oberste Ebene). */
+const validFolder = (id) => (id && folderById(id) ? id : null);
+function folderPath(id) {
+  const path = [], seen = new Set();
+  let f = folderById(id);
+  while (f && !seen.has(f.id)) { seen.add(f.id); path.unshift(f); f = folderById(f.parentId); }
+  return path;
+}
+/** true, wenn Ordner `id` gleich `ancestorId` ist oder darin liegt. */
+function isInside(id, ancestorId) {
+  const seen = new Set();
+  let f = folderById(id);
+  while (f && !seen.has(f.id)) {
+    if (f.id === ancestorId) return true;
+    seen.add(f.id);
+    f = folderById(f.parentId);
+  }
+  return false;
+}
+function childCounts(id) {
+  return {
+    folders: folders.filter((f) => validFolder(f.parentId) === id).length,
+    notebooks: lastMetas.filter((m) => validFolder(m.folderId) === id).length,
+  };
+}
+function countLabel({ folders: f, notebooks: n }) {
+  const parts = [];
+  if (n) parts.push(`${n} ${n === 1 ? 'Notizbuch' : 'Notizbücher'}`);
+  if (f) parts.push(`${f} ${f === 1 ? 'Ordner' : 'Ordner'}`);
+  return parts.join(' · ') || 'Leer';
+}
+function openFolder(id) {
+  state.libFolder = validFolder(id);
+  $('#search').value = '';
+  renderLibrary();
+  $('.lib-main').scrollTop = 0;
+}
+async function createFolder() {
+  const name = await ask({ title: 'Neuer Ordner', input: 'Neuer Ordner', ok: 'Erstellen' });
+  if (!name?.trim()) return;
+  const now = Date.now();
+  const f = { id: uid(), name: name.trim(), parentId: state.libFolder, color: FOLDER_COLORS[0], createdAt: now, updatedAt: now };
+  await db.saveFolder(f);
+  renderLibrary();
+}
+async function moveItem(item, dest) {
+  dest = validFolder(dest);
+  if (item.type === 'folder') {
+    const f = folderById(item.id);
+    if (!f || validFolder(f.parentId) === dest) return;
+    if (dest && isInside(dest, f.id)) { toast('Ein Ordner kann nicht in sich selbst verschoben werden'); return; }
+    f.parentId = dest;
+    f.updatedAt = Date.now();
+    await db.saveFolder(f);
+  } else {
+    const m = lastMetas.find((x) => x.id === item.id);
+    if (!m || validFolder(m.folderId) === dest) return;
+    await db.patchNotebook(item.id, { folderId: dest });
+  }
+  toast(`Verschoben nach „${dest ? folderById(dest).name : 'Dokumente'}“`);
+  renderLibrary();
+}
+async function deleteFolder(f) {
+  const parent = validFolder(f.parentId);
+  for (const sub of folders.filter((x) => x.parentId === f.id)) {
+    sub.parentId = parent;
+    await db.saveFolder(sub);
+  }
+  for (const m of lastMetas.filter((x) => x.folderId === f.id)) await db.patchNotebook(m.id, { folderId: parent });
+  await db.deleteFolder(f.id);
+  if (state.libFolder === f.id) state.libFolder = parent;
+  toast('Ordner gelöscht');
+  renderLibrary();
+}
+function folderMenu(anchor, f) {
+  openMenu(anchor, [
+    { label: 'Öffnen', icon: 'folder', action: () => openFolder(f.id) },
+    { label: 'Umbenennen', icon: 'edit', action: async () => {
+      const t = await ask({ title: 'Ordner umbenennen', input: f.name, ok: 'Speichern' });
+      if (!t?.trim()) return;
+      f.name = t.trim();
+      f.updatedAt = Date.now();
+      await db.saveFolder(f);
+      renderLibrary();
+    } },
+    { label: 'Farbe ändern', icon: 'grid', action: () => folderColorMenu(anchor, f) },
+    { label: 'Verschieben nach …', icon: 'move', action: () => moveDialog({ type: 'folder', id: f.id, name: f.name }) },
+    '-',
+    { label: 'Ordner löschen', icon: 'trash', danger: true, action: async () => {
+      const c = childCounts(f.id);
+      const n = c.folders + c.notebooks;
+      const ok = await ask({
+        title: 'Ordner löschen?',
+        message: n ? `„${f.name}“ wird gelöscht. Der Inhalt (${countLabel(c)}) bleibt erhalten und wird eine Ebene nach oben verschoben.` : `„${f.name}“ wird gelöscht.`,
+        ok: 'Löschen', danger: true,
+      });
+      if (ok) deleteFolder(f);
+    } },
+  ]);
+}
+function folderColorMenu(anchor, f) {
+  const el = document.createElement('div');
+  el.innerHTML = '<div class="menu-title">Ordnerfarbe</div>';
+  const sw = document.createElement('div');
+  sw.className = 'swatches';
+  sw.style.padding = '6px 10px 10px';
+  for (const c of FOLDER_COLORS) {
+    const b = document.createElement('button');
+    b.className = 'swatch' + (c === f.color ? ' active' : '');
+    b.style.setProperty('--c', c);
+    b.title = c;
+    b.onclick = async () => { closeMenu(); f.color = c; await db.saveFolder(f); renderLibrary(); };
+    sw.appendChild(b);
+  }
+  el.appendChild(sw);
+  openMenu(anchor, el);
+}
+/** Dialog mit Ordnerbaum, um ein Notizbuch oder einen Ordner zu verschieben. */
+function moveDialog(item) {
+  const current = item.type === 'folder' ? validFolder(folderById(item.id)?.parentId) : validFolder(lastMetas.find((m) => m.id === item.id)?.folderId);
+  const dlg = document.createElement('dialog');
+  dlg.innerHTML = `<form method="dialog" class="dlg">
+    <h2>„${esc(item.name)}“ verschieben</h2>
+    <div class="folder-tree" role="list"></div>
+    <div class="dlg-actions"><button class="btn ghost" value="cancel">Abbrechen</button></div></form>`;
+  const tree = dlg.querySelector('.folder-tree');
+  const row = (id, name, depth, color) => {
+    const blocked = item.type === 'folder' && id && isInside(id, item.id);
+    const here = id === current;
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'tree-row';
+    b.disabled = blocked || here;
+    b.style.paddingLeft = 12 + depth * 22 + 'px';
+    b.innerHTML = `<span class="tree-ic" style="color:${color || 'var(--text-2)'}">${icon(id ? 'folder' : 'page')}</span><span>${esc(name)}</span>${here ? '<span class="tree-hint">aktuell</span>' : ''}`;
+    b.onclick = () => { dlg.close(); moveItem(item, id); };
+    tree.appendChild(b);
+  };
+  row(null, 'Dokumente', 0);
+  const walk = (parent, depth) => {
+    folders.filter((f) => validFolder(f.parentId) === parent)
+      .sort((a, b) => a.name.localeCompare(b.name, 'de'))
+      .forEach((f) => { row(f.id, f.name, depth, f.color); walk(f.id, depth + 1); });
+  };
+  walk(null, 1);
+  dlg.addEventListener('close', () => dlg.remove());
+  document.body.appendChild(dlg);
+  dlg.showModal();
+}
+
+/* Drag-and-drop in der Bibliothek */
+let libDrag = null;
+function makeDraggable(el, item) {
+  el.draggable = true;
+  el.addEventListener('dragstart', (e) => {
+    libDrag = item;
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', item.name);
+    el.classList.add('dragging');
+  });
+  el.addEventListener('dragend', () => { libDrag = null; el.classList.remove('dragging'); });
+}
+function makeDropTarget(el, folderId) {
+  el.addEventListener('dragover', (e) => {
+    if (!libDrag || (libDrag.type === 'folder' && folderId && isInside(folderId, libDrag.id))) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    el.classList.add('drop-over');
+  });
+  el.addEventListener('dragleave', () => el.classList.remove('drop-over'));
+  el.addEventListener('drop', (e) => {
+    el.classList.remove('drop-over');
+    if (!libDrag) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const item = libDrag;
+    libDrag = null;
+    moveItem(item, folderId);
+  });
+}
+
+function renderCrumbs(q) {
+  const el = $('#crumbs');
+  const path = folderPath(state.libFolder);
+  $('#lib-title').textContent = q ? 'Suchergebnisse' : (path.length ? path[path.length - 1].name : 'Dokumente');
+  el.innerHTML = '';
+  el.hidden = !path.length || !!q;
+  if (el.hidden) return;
+  const crumbs = [{ id: null, name: 'Dokumente' }, ...path.slice(0, -1)];
+  crumbs.forEach((c, i) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'crumb';
+    b.innerHTML = (i === 0 ? icon('back') : '') + `<span>${esc(c.name)}</span>`;
+    b.onclick = () => openFolder(c.id);
+    makeDropTarget(b, c.id);
+    el.appendChild(b);
+    el.insertAdjacentHTML('beforeend', '<span class="crumb-sep">›</span>');
+  });
+}
+
 async function renderLibrary() {
   const q = $('#search').value.trim().toLowerCase();
-  let metas = await db.listMeta();
-  metas.sort((a, b) => b.updatedAt - a.updatedAt);
-  if (q) metas = metas.filter((m) => m.title.toLowerCase().includes(q));
+  const [metas, fl] = await Promise.all([db.listMeta(), db.listFolders()]);
+  folders = fl;
+  lastMetas = metas;
+  if (state.libFolder && !folderById(state.libFolder)) state.libFolder = null;
+  const cur = state.libFolder;
+  renderCrumbs(q);
+  let shownFolders, shownNbs;
+  if (q) {
+    shownFolders = folders.filter((f) => f.name.toLowerCase().includes(q));
+    shownNbs = metas.filter((m) => m.title.toLowerCase().includes(q));
+  } else {
+    shownFolders = folders.filter((f) => validFolder(f.parentId) === cur);
+    shownNbs = metas.filter((m) => validFolder(m.folderId) === cur);
+  }
+  shownFolders.sort((a, b) => a.name.localeCompare(b.name, 'de'));
+  shownNbs.sort((a, b) => b.updatedAt - a.updatedAt);
+  const where = (id) => folderPath(id).map((f) => f.name).join(' › ') || 'Dokumente';
+
   const grid = $('#nb-grid');
   grid.innerHTML = '';
   if (!q) {
@@ -624,8 +849,31 @@ async function renderLibrary() {
     n.innerHTML = `<div class="nb-cover">${icon('plus')}</div><div class="nb-info"><div class="txt"><div class="nb-title">Neues Notizbuch</div></div></div>`;
     n.onclick = openNewDialog;
     grid.appendChild(n);
+    const nf = document.createElement('div');
+    nf.className = 'nb-card nb-new';
+    nf.innerHTML = `<div class="nb-cover">${icon('folderPlus')}</div><div class="nb-info"><div class="txt"><div class="nb-title">Neuer Ordner</div></div></div>`;
+    nf.onclick = createFolder;
+    grid.appendChild(nf);
   }
-  for (const m of metas) {
+  for (const f of shownFolders) {
+    const card = document.createElement('div');
+    card.className = 'nb-card folder-card';
+    card.innerHTML = `
+      <div class="folder-cover" style="--fc:${f.color || FOLDER_COLORS[0]}">
+        <div class="folder-shape"><div class="folder-back"></div><div class="folder-paper"></div><div class="folder-front"></div></div>
+      </div>
+      <button class="nb-more" title="Optionen">${icon('more')}</button>
+      <div class="nb-info"><div class="txt">
+        <div class="nb-title">${esc(f.name)}</div>
+        <div class="nb-meta">${q ? esc(where(f.parentId)) : countLabel(childCounts(f.id))}</div>
+      </div></div>`;
+    card.onclick = (e) => { if (!e.target.closest('.nb-more')) openFolder(f.id); };
+    card.querySelector('.nb-more').onclick = (e) => { e.stopPropagation(); folderMenu(e.currentTarget, f); };
+    makeDraggable(card, { type: 'folder', id: f.id, name: f.name });
+    makeDropTarget(card, f.id);
+    grid.appendChild(card);
+  }
+  for (const m of shownNbs) {
     const card = document.createElement('div');
     card.className = 'nb-card';
     const colored = m.cover && m.cover !== 'none';
@@ -636,16 +884,20 @@ async function renderLibrary() {
       <button class="nb-more" title="Optionen">${icon('more')}</button>
       <div class="nb-info"><div class="txt">
         <div class="nb-title">${esc(m.title)}</div>
-        <div class="nb-meta">${dateFmt.format(m.updatedAt)} · ${m.pageCount} ${m.pageCount === 1 ? 'Seite' : 'Seiten'}</div>
+        <div class="nb-meta">${q ? esc(where(validFolder(m.folderId))) : `${dateFmt.format(m.updatedAt)} · ${m.pageCount} ${m.pageCount === 1 ? 'Seite' : 'Seiten'}`}</div>
       </div></div>`;
     card.onclick = (e) => {
       if (e.target.closest('.nb-more')) return;
       openNotebook(m.id);
     };
     card.querySelector('.nb-more').onclick = (e) => { e.stopPropagation(); notebookMenu(e.currentTarget, m); };
+    makeDraggable(card, { type: 'notebook', id: m.id, name: m.title });
     grid.appendChild(card);
   }
-  if (q && !metas.length) grid.innerHTML = '<p class="lib-empty">Keine Treffer.</p>';
+  if (q && !shownFolders.length && !shownNbs.length) grid.innerHTML = '<p class="lib-empty">Keine Treffer.</p>';
+  else if (!q && cur && !shownFolders.length && !shownNbs.length) {
+    grid.insertAdjacentHTML('beforeend', '<p class="lib-empty grid-full">Dieser Ordner ist leer. Erstelle hier ein Notizbuch oder einen Ordner, oder verschiebe etwas hierher.</p>');
+  }
 }
 
 function notebookMenu(anchor, m) {
@@ -658,6 +910,7 @@ function notebookMenu(anchor, m) {
       renderLibrary();
     } },
     { label: 'Cover ändern', icon: 'grid', action: () => coverMenu(anchor, m) },
+    { label: 'Verschieben nach …', icon: 'move', action: () => moveDialog({ type: 'notebook', id: m.id, name: m.title }) },
     { label: 'Duplizieren', icon: 'copy', action: async () => {
       const nb = await db.loadNotebook(m.id);
       const copy = reId(nb);
@@ -782,7 +1035,7 @@ function openNewDialog() {
   buildSeg($('#new-orient'), [[false, 'Hoch'], [true, 'Quer']], sel.landscape, (v) => { sel.landscape = v; drawPapers(); });
   dlg.onclose = async () => {
     if (dlg.returnValue !== 'ok') return;
-    const nb = newNotebook({ title: $('#new-title').value.trim(), ...sel });
+    const nb = newNotebook({ title: $('#new-title').value.trim(), ...sel, folderId: state.libFolder });
     await saveFresh(nb);
     openNotebook(nb.id);
   };
@@ -1750,7 +2003,7 @@ async function importPDF(file) {
   try {
     toast('PDF wird importiert …', 0);
     const { pages, assets } = await pdfToPages(file, (n, t) => toast(`PDF wird importiert … ${n}/${t}`, 0));
-    const nb = newNotebook({ title: file.name.replace(/\.pdf$/i, ''), cover: 'none' });
+    const nb = newNotebook({ title: file.name.replace(/\.pdf$/i, ''), cover: 'none', folderId: state.libFolder });
     nb.pages = pages;
     nb.assets = assets;
     await saveFresh(nb);
@@ -1823,6 +2076,7 @@ async function importBackup(file) {
     const data = JSON.parse(await file.text());
     if (data.format !== 'jelly-notebook' || !data.notebook?.pages) throw new Error('Unbekanntes Format');
     const nb = reId(data.notebook);
+    nb.folderId = state.libFolder;
     await saveFresh(nb);
     toast('Backup importiert');
     renderLibrary();
@@ -1879,7 +2133,10 @@ function applySidebar() {
   if (state.sidebar && state.nb) queueAllThumbs();
 }
 
-$('#btn-new').onclick = openNewDialog;
+$('#btn-new').onclick = (e) => openMenu(e.currentTarget, [
+  { label: 'Notizbuch', icon: 'page', action: openNewDialog },
+  { label: 'Ordner', icon: 'folderPlus', action: createFolder },
+]);
 $('#btn-import-pdf').onclick = () => $('#file-pdf').click();
 $('#btn-import-backup').onclick = () => $('#file-backup').click();
 $('#file-pdf').onchange = (e) => { importPDF(e.target.files[0]); e.target.value = ''; };

@@ -5,6 +5,7 @@ Eine Notiz-Web-App im Stil digitaler Notizbücher: handschriftlich schreiben, PD
 ## Funktionen
 
 - **Bibliothek** mit Notizbüchern (Cover-Farben oder Vorschau der ersten Seite), Suche, Umbenennen, Duplizieren, Löschen
+- **Ordner**, beliebig ineinander verschachtelt: anlegen, umbenennen, einfärben, Notizbücher und Ordner verschieben (über das Menü oder per Drag-and-drop). Beim Löschen eines Ordners bleibt der Inhalt erhalten und rutscht eine Ebene nach oben.
 - **Papiervorlagen:** Blanko, Liniert, Kariert, Gepunktet, Cornell; Weiß, Creme, Dunkel; Hoch- oder Querformat
 - **Stift** mit Drucksensitivität (Apple Pencil, Surface Pen, Wacom), Farben und Strichstärken
 - **Textmarker** (halbtransparent, liegt nicht über der Schrift)

@@ -98,6 +98,19 @@ export const cloud = {
     return rows.map((r) => r.meta);
   },
 
+  async listFolders() {
+    const rows = check(await sb.from('folders').select('data'));
+    return rows.map((r) => r.data);
+  },
+
+  async saveFolder(folder) {
+    check(await sb.from('folders').upsert({ id: folder.id, user_id: user.id, data: folder, updated_at: new Date().toISOString() }));
+  },
+
+  async deleteFolder(id) {
+    check(await sb.from('folders').delete().eq('id', id));
+  },
+
   async loadNotebook(id) {
     const row = check(await sb.from('notebooks').select('data').eq('id', id).maybeSingle());
     if (!row) return null;

@@ -22,6 +22,26 @@ create policy "notebooks_insert_own" on public.notebooks for insert with check (
 create policy "notebooks_update_own" on public.notebooks for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
 create policy "notebooks_delete_own" on public.notebooks for delete using (auth.uid() = user_id);
 
+-- Ordner (können ineinander verschachtelt sein, siehe data.parentId)
+create table if not exists public.folders (
+  id text primary key,
+  user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  data jsonb not null,
+  updated_at timestamptz not null default now()
+);
+create index if not exists folders_user_id_idx on public.folders (user_id);
+
+alter table public.folders enable row level security;
+
+drop policy if exists "folders_select_own" on public.folders;
+drop policy if exists "folders_insert_own" on public.folders;
+drop policy if exists "folders_update_own" on public.folders;
+drop policy if exists "folders_delete_own" on public.folders;
+create policy "folders_select_own" on public.folders for select using (auth.uid() = user_id);
+create policy "folders_insert_own" on public.folders for insert with check (auth.uid() = user_id);
+create policy "folders_update_own" on public.folders for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
+create policy "folders_delete_own" on public.folders for delete using (auth.uid() = user_id);
+
 -- Bilder und PDF-Seiten: privater Speicher-Bucket, Pfad beginnt mit der Nutzer-ID.
 insert into storage.buckets (id, name, public) values ('assets', 'assets', false)
 on conflict (id) do nothing;

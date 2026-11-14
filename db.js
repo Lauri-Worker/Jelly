@@ -2,7 +2,7 @@
 // damit beim Speichern während des Schreibens nicht jedes Mal alle Bilder kopiert werden.
 
 const DB_NAME = 'jelly-notes';
-const VERSION = 1;
+const VERSION = 2;
 let dbPromise = null;
 
 function open() {
@@ -11,10 +11,11 @@ function open() {
       const req = indexedDB.open(DB_NAME, VERSION);
       req.onupgradeneeded = () => {
         const d = req.result;
-        d.createObjectStore('meta', { keyPath: 'id' });
-        d.createObjectStore('notebooks', { keyPath: 'id' });
-        const assets = d.createObjectStore('assets', { keyPath: 'id' });
-        assets.createIndex('nb', 'nb');
+        const has = (n) => d.objectStoreNames.contains(n);
+        if (!has('meta')) d.createObjectStore('meta', { keyPath: 'id' });
+        if (!has('notebooks')) d.createObjectStore('notebooks', { keyPath: 'id' });
+        if (!has('assets')) d.createObjectStore('assets', { keyPath: 'id' }).createIndex('nb', 'nb');
+        if (!has('folders')) d.createObjectStore('folders', { keyPath: 'id' }); // ab Version 2
       };
       req.onsuccess = () => resolve(req.result);
       req.onerror = () => reject(req.error);
@@ -40,6 +41,25 @@ export const db = {
   async listMeta() {
     const d = await open();
     return req2p(d.transaction('meta').objectStore('meta').getAll());
+  },
+
+  async listFolders() {
+    const d = await open();
+    return req2p(d.transaction('folders').objectStore('folders').getAll());
+  },
+
+  async saveFolder(folder) {
+    const d = await open();
+    const tx = d.transaction('folders', 'readwrite');
+    tx.objectStore('folders').put(folder);
+    return done(tx);
+  },
+
+  async deleteFolder(id) {
+    const d = await open();
+    const tx = d.transaction('folders', 'readwrite');
+    tx.objectStore('folders').delete(id);
+    return done(tx);
   },
 
   async loadNotebook(id) {
