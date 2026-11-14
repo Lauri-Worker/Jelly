@@ -87,7 +87,7 @@
         <button class="tool" data-tool="lasso" title="Lasso (L)"><span data-icon="lasso"></span></button>
         <button class="tool" data-tool="shape" title="Formen (S)"><span data-icon="shapes"></span></button>
         <button class="tool" data-tool="text" title="Text (T)"><span data-icon="text"></span></button>
-        <button class="tool" id="btn-image" title="Bild einfügen"><span data-icon="image"></span></button>
+        <button class="tool" id="btn-insert" title="Einfügen: Bild, PDF oder Scan"><span data-icon="insert"></span></button>
       </div>
       <div class="options" id="options"></div>
     </div>
@@ -127,12 +127,52 @@
     </form>
   </dialog>
 
+  <!-- Dokumenten-Scanner -->
+  <div id="scanner" class="scanner" hidden>
+    <header class="scan-bar">
+      <button class="scan-btn" id="scan-cancel" type="button">Abbrechen</button>
+      <div class="scan-title" id="scan-title">Scannen</div>
+      <button class="scan-btn strong" id="scan-finish" type="button" hidden>Einfügen</button>
+    </header>
+    <div class="scan-stage" id="scan-stage">
+      <div class="scan-loading" id="scan-loading">Foto wird geladen …</div>
+      <div class="scan-frame" id="scan-frame" hidden>
+        <canvas id="scan-canvas"></canvas>
+        <svg id="scan-svg" class="scan-svg"><polygon id="scan-poly"></polygon></svg>
+        <div class="scan-handle" data-i="0"></div>
+        <div class="scan-handle" data-i="1"></div>
+        <div class="scan-handle" data-i="2"></div>
+        <div class="scan-handle" data-i="3"></div>
+      </div>
+      <div class="scan-review" id="scan-review" hidden></div>
+    </div>
+    <footer class="scan-tools" id="scan-adjust">
+      <div class="scan-hint">Ziehe die Ecken auf die Ränder des Blatts.</div>
+      <div class="scan-row">
+        <div class="seg dark" id="scan-filter"></div>
+      </div>
+      <div class="scan-row">
+        <button class="scan-btn" id="scan-retake" type="button">Neu aufnehmen</button>
+        <button class="scan-btn" id="scan-full" type="button">Ganzes Bild</button>
+        <button class="scan-btn primary" id="scan-accept" type="button">Seite übernehmen</button>
+      </div>
+    </footer>
+    <footer class="scan-tools" id="scan-more" hidden>
+      <div class="scan-row">
+        <button class="scan-btn" id="scan-next-cam" type="button">Weitere Seite scannen</button>
+        <button class="scan-btn" id="scan-next-pick" type="button">Aus Fotos wählen</button>
+      </div>
+    </footer>
+  </div>
+
   <div id="toast" role="status" aria-live="polite"></div>
 
   <input type="file" id="file-pdf" accept="application/pdf" hidden>
   <input type="file" id="file-pdf-append" accept="application/pdf" hidden>
   <input type="file" id="file-backup" accept="application/json,.json" hidden>
   <input type="file" id="file-image" accept="image/*" hidden>
+  <input type="file" id="file-scan" accept="image/*" capture="environment" hidden>
+  <input type="file" id="file-scan-pick" accept="image/*" multiple hidden>
 
   <script type="module" src="app.js"></script>
 </body>

@@ -13,7 +13,8 @@ Eine Notiz-Web-App im Stil digitaler Notizbücher: handschriftlich schreiben, PD
 - **Lasso:** auswählen, verschieben, skalieren, umfärben, duplizieren, kopieren und einfügen, löschen
 - **Formen:** Linie, Pfeil, Rechteck, Ellipse. Mit Umschalt entstehen Quadrat bzw. Kreis.
 - **Textfelder** und **Bilder** (über Button, Drag-and-drop oder Einfügen aus der Zwischenablage)
-- **PDF-Import** als neues Notizbuch oder als angehängte Seiten, um PDFs zu annotieren
+- **PDF-Import** als neues Notizbuch oder über **Einfügen → PDF einfügen** direkt in ein Notizbuch, um PDFs zu annotieren
+- **Dokumente scannen** mit der Kamera: Blattecken werden automatisch erkannt und lassen sich nachziehen, das Blatt wird entzerrt und aufgehellt (Farbe, Graustufen, S/W oder Original). Mehrere Seiten nacheinander, Einfügen ins offene Notizbuch oder als neues Notizbuch.
 - **Export:** PDF, aktuelle Seite als PNG, Backup als `.json` (lässt sich wieder importieren)
 - **Seiten:** hinzufügen, duplizieren, verschieben, löschen, Papier ändern; Seitenübersicht mit Miniaturen
 - **Zoom:** Zwei-Finger-Geste, Strg + Mausrad oder Buttons
@@ -78,6 +79,7 @@ Danach öffnet sich die App unter der Adresse des Dienstes in Safari, Chrome und
 - `index.html`, `style.css`: Oberfläche
 - `app.js`: Editor, Rendering (Canvas), Werkzeuge, Bibliothek, Import/Export
 - `db.js`: lokale Speicherung in IndexedDB (Notizbücher, Metadaten und Bilder getrennt)
+- `scan.js`: Dokumenten-Scanner (Eckenerkennung, Entzerrung, Aufhellen)
 - `cloud.js`, `config.js`, `supabase/schema.sql`: Benutzerkonten und Cloud-Speicher mit Supabase
 - `sw.js`, `manifest.webmanifest`: PWA/Offline
 - `vendor/`: [jsPDF](https://github.com/parallax/jsPDF) (MIT), [pdf.js](https://github.com/mozilla/pdf.js) (Apache 2.0) und [supabase-js](https://github.com/supabase/supabase-js) (MIT)

@@ -1,5 +1,6 @@
 import { db as localDb } from './db.js';
 import { cloud, auth, cloudConfigured } from './cloud.js';
+import { loadScanImage, detectCorners, defaultCorners, warpDocument } from './scan.js';
 
 /** Aktiver Speicher: lokal (IndexedDB) oder Cloud (Supabase, nach Anmeldung). */
 let db = localDb;
@@ -40,6 +41,10 @@ const ICONS = {
   folder: '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
   folderPlus: '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M12 10v6M9 13h6"/>',
   move: '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 13h6"/><path d="m13 11 2 2-2 2"/>',
+  insert: '<rect x="3" y="3" width="18" height="18" rx="3"/><path d="M12 8v8M8 12h8"/>',
+  camera: '<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3z"/><circle cx="12" cy="13" r="3.5"/>',
+  scan: '<path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 12h10"/>',
+  pdf: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h2.5a1.5 1.5 0 0 1 0 3H8v-3zm0 3v2"/>',
   share: '<path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><path d="m16 6-4-4-4 4"/><path d="M12 2v13"/>',
   page: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/>',
   file: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 15h6"/>',
@@ -2087,6 +2092,191 @@ async function importBackup(file) {
 }
 
 /* =====================================================================
+   Dokumenten-Scanner
+   ===================================================================== */
+const SCAN_FILTERS = [['color', 'Farbe'], ['gray', 'Graustufen'], ['bw', 'S/W'], ['original', 'Original']];
+const scan = { target: null, pages: [], queue: [], img: null, corners: null, filter: 'color', view: null, busy: false };
+try { scan.filter = localStorage.getItem('jelly.scanFilter') || 'color'; } catch { /* */ }
+
+function startScan(target, pick) {
+  scan.target = target;
+  scan.pages = [];
+  scan.queue = [];
+  $(pick ? '#file-scan-pick' : '#file-scan').click();
+}
+async function onScanFiles(files) {
+  const list = [...files].filter((f) => f.type.startsWith('image/') || !f.type);
+  if (!list.length) return;
+  scan.queue.push(...list);
+  $('#scanner').hidden = false;
+  if (!scan.busy) nextScanFile();
+}
+async function nextScanFile() {
+  const file = scan.queue.shift();
+  if (!file) return showScanReview();
+  scan.busy = true;
+  setScanMode('loading');
+  try {
+    scan.img = await loadScanImage(file, 2400);
+    scan.corners = detectCorners(scan.img);
+    setScanMode('adjust');
+  } catch (err) {
+    console.error(err);
+    toast(err.message || 'Das Foto konnte nicht geöffnet werden.');
+    scan.busy = false;
+    nextScanFile();
+  }
+}
+function setScanMode(mode) {
+  const n = scan.pages.length;
+  $('#scan-loading').hidden = mode !== 'loading';
+  $('#scan-frame').hidden = mode !== 'adjust';
+  $('#scan-review').hidden = mode !== 'review';
+  $('#scan-adjust').hidden = mode !== 'adjust';
+  $('#scan-more').hidden = mode !== 'review';
+  $('#scan-finish').hidden = !n || mode === 'loading';
+  $('#scan-finish').textContent = `${n} ${n === 1 ? 'Seite' : 'Seiten'} einfügen`;
+  $('#scan-title').textContent = mode === 'review' ? `${n} ${n === 1 ? 'Seite' : 'Seiten'} gescannt` : `Seite ${n + 1}`;
+  if (mode === 'adjust') { buildScanFilters(); layoutScan(); }
+}
+function buildScanFilters() {
+  buildSeg($('#scan-filter'), SCAN_FILTERS, scan.filter, (v) => {
+    scan.filter = v;
+    try { localStorage.setItem('jelly.scanFilter', v); } catch { /* */ }
+  });
+}
+function layoutScan() {
+  if (!scan.img || $('#scan-frame').hidden) return;
+  const stage = $('#scan-stage').getBoundingClientRect();
+  const iw = scan.img.width, ih = scan.img.height;
+  const k = Math.min((stage.width - 48) / iw, (stage.height - 48) / ih);
+  const w = Math.round(iw * k), h = Math.round(ih * k);
+  const frame = $('#scan-frame');
+  frame.style.width = w + 'px';
+  frame.style.height = h + 'px';
+  const c = $('#scan-canvas');
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  c.width = Math.round(w * dpr); c.height = Math.round(h * dpr);
+  c.getContext('2d').drawImage(scan.img, 0, 0, c.width, c.height);
+  $('#scan-svg').setAttribute('viewBox', `0 0 ${w} ${h}`);
+  scan.view = { k, w, h };
+  positionScanHandles();
+}
+function positionScanHandles() {
+  const { k } = scan.view;
+  const pts = scan.corners.map(([x, y]) => [x * k, y * k]);
+  document.querySelectorAll('.scan-handle').forEach((el) => {
+    const [x, y] = pts[+el.dataset.i];
+    el.style.left = x + 'px';
+    el.style.top = y + 'px';
+  });
+  $('#scan-poly').setAttribute('points', pts.map((p) => p.join(',')).join(' '));
+}
+document.querySelectorAll('.scan-handle').forEach((el) => {
+  el.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    el.setPointerCapture(e.pointerId);
+    el.classList.add('active');
+    const i = +el.dataset.i;
+    const move = (ev) => {
+      const r = $('#scan-frame').getBoundingClientRect();
+      const { k } = scan.view;
+      const x = clamp((ev.clientX - r.left) / k, 0, scan.img.width);
+      const y = clamp((ev.clientY - r.top) / k, 0, scan.img.height);
+      scan.corners[i] = [x, y];
+      positionScanHandles();
+    };
+    const up = () => {
+      el.classList.remove('active');
+      el.removeEventListener('pointermove', move);
+      el.removeEventListener('pointerup', up);
+      el.removeEventListener('pointercancel', up);
+    };
+    el.addEventListener('pointermove', move);
+    el.addEventListener('pointerup', up);
+    el.addEventListener('pointercancel', up);
+  });
+});
+window.addEventListener('resize', () => { if (!$('#scanner').hidden) layoutScan(); });
+
+function acceptScanPage() {
+  const btn = $('#scan-accept');
+  btn.disabled = true;
+  btn.textContent = 'Wird bearbeitet …';
+  // Kurz warten, damit der Hinweis sichtbar wird, bevor die Rechnung den Bildschirm blockiert
+  setTimeout(() => {
+    try {
+      const out = warpDocument(scan.img, scan.corners, scan.filter, 2000);
+      scan.pages.push({ src: out.toDataURL('image/jpeg', 0.86), w: out.width, h: out.height });
+    } catch (err) {
+      console.error(err);
+      toast('Die Seite konnte nicht bearbeitet werden.');
+    }
+    btn.disabled = false;
+    btn.textContent = 'Seite übernehmen';
+    scan.img = null;
+    scan.busy = false;
+    nextScanFile();
+  }, 30);
+}
+function showScanReview() {
+  scan.busy = false;
+  if (!scan.pages.length) { closeScanner(); return; }
+  const el = $('#scan-review');
+  el.innerHTML = '';
+  scan.pages.forEach((p, i) => {
+    const d = document.createElement('div');
+    d.className = 'scan-thumb';
+    d.innerHTML = `<img src="${p.src}" alt="Seite ${i + 1}"><span>${i + 1}</span><button type="button" title="Seite entfernen" aria-label="Seite ${i + 1} entfernen">×</button>`;
+    d.querySelector('button').onclick = () => { scan.pages.splice(i, 1); showScanReview(); };
+    el.appendChild(d);
+  });
+  setScanMode('review');
+}
+function closeScanner() {
+  $('#scanner').hidden = true;
+  scan.pages = [];
+  scan.queue = [];
+  scan.img = null;
+  scan.busy = false;
+}
+async function finishScan() {
+  const pages = [], assets = {};
+  for (const p of scan.pages) {
+    const key = uid();
+    assets[key] = p.src;
+    const w = p.w > p.h ? PAGE_H : PAGE_W;
+    pages.push({ id: uid(), w, h: Math.round(w * p.h / p.w), paper: 'blank', color: 'white', bg: key, strokes: [], items: [] });
+  }
+  const target = scan.target;
+  closeScanner();
+  if (target === 'notebook' && state.nb) {
+    Object.assign(state.nb.assets, assets);
+    state.nb.pages.splice(state.cur + 1, 0, ...pages);
+    rebuildAfterPageChange(state.cur + 1);
+    toast(`${pages.length} ${pages.length === 1 ? 'Seite' : 'Seiten'} eingefügt`);
+  } else {
+    const nb = newNotebook({ title: 'Scan ' + new Intl.DateTimeFormat('de-DE', { dateStyle: 'medium' }).format(new Date()), cover: 'none', folderId: state.libFolder });
+    nb.pages = pages;
+    nb.assets = assets;
+    await saveFresh(nb);
+    openNotebook(nb.id);
+  }
+}
+$('#file-scan').onchange = (e) => { onScanFiles(e.target.files); e.target.value = ''; };
+$('#file-scan-pick').onchange = (e) => { onScanFiles(e.target.files); e.target.value = ''; };
+$('#scan-accept').onclick = acceptScanPage;
+$('#scan-retake').onclick = () => $('#file-scan').click();
+$('#scan-full').onclick = () => { scan.corners = defaultCorners(scan.img.width, scan.img.height, 0); positionScanHandles(); };
+$('#scan-next-cam').onclick = () => $('#file-scan').click();
+$('#scan-next-pick').onclick = () => $('#file-scan-pick').click();
+$('#scan-finish').onclick = finishScan;
+$('#scan-cancel').onclick = async () => {
+  if (scan.pages.length && !(await ask({ title: 'Scan verwerfen?', message: 'Die bereits gescannten Seiten gehen verloren.', ok: 'Verwerfen', danger: true }))) return;
+  closeScanner();
+};
+
+/* =====================================================================
    Menüs
    ===================================================================== */
 let menuEl = null;
@@ -2136,6 +2326,9 @@ function applySidebar() {
 $('#btn-new').onclick = (e) => openMenu(e.currentTarget, [
   { label: 'Notizbuch', icon: 'page', action: openNewDialog },
   { label: 'Ordner', icon: 'folderPlus', action: createFolder },
+  '-',
+  { label: 'Dokument scannen', icon: 'scan', action: () => startScan('new', false) },
+  { label: 'PDF importieren', icon: 'pdf', action: () => $('#file-pdf').click() },
 ]);
 $('#btn-import-pdf').onclick = () => $('#file-pdf').click();
 $('#btn-import-backup').onclick = () => $('#file-backup').click();
@@ -2160,7 +2353,13 @@ $('#nb-title').addEventListener('input', (e) => {
 $('#nb-title').addEventListener('keydown', (e) => { if (e.key === 'Enter') e.target.blur(); });
 $('#btn-undo').onclick = undo;
 $('#btn-redo').onclick = redo;
-$('#btn-image').onclick = () => $('#file-image').click();
+$('#btn-insert').onclick = (e) => openMenu(e.currentTarget, [
+  { label: 'Bild oder Foto', icon: 'image', action: () => $('#file-image').click() },
+  { label: 'PDF einfügen', icon: 'pdf', action: () => $('#file-pdf-append').click() },
+  '-',
+  { label: 'Dokument scannen', icon: 'scan', action: () => startScan('notebook', false) },
+  { label: 'Scan aus Fotos', icon: 'camera', action: () => startScan('notebook', true) },
+]);
 $('#btn-page').onclick = (e) => pageMenu(e.currentTarget);
 $('#btn-add-page-end').onclick = () => addPage(state.nb.pages.length - 1);
 $('#btn-add-page-side').onclick = () => addPage(state.nb.pages.length - 1);
@@ -2402,7 +2601,7 @@ if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
 // Erkennt neue Versionen auf dem Server (z.B. nach einem Push auf GitHub)
 // anhand von ETag/Last-Modified und lädt die App dann neu. Funktioniert ohne
 // Versionsnummern, die man von Hand hochzählen müsste.
-const UPDATE_FILES = ['./', 'app.js', 'style.css', 'db.js', 'cloud.js'];
+const UPDATE_FILES = ['./', 'app.js', 'style.css', 'db.js', 'cloud.js', 'scan.js'];
 let versionSig = null;
 let updating = false;
 async function serverSignature() {
