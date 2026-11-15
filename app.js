@@ -1,6 +1,7 @@
 import { db as localDb } from './db.js';
 import { cloud, auth, cloudConfigured } from './cloud.js';
 import { LEGAL, NEWS, NEWS_VERSION, APP_VERSION } from './legal.js';
+import { COVER_DESIGNS, isDesign, coverStyle, designLight } from './covers.js';
 import { loadScanImage, detectCorners, defaultCorners, warpDocument } from './scan.js';
 
 /** Aktiver Speicher: lokal (IndexedDB) oder Cloud (Supabase, nach Anmeldung). */
@@ -1348,7 +1349,7 @@ async function renderLibrary() {
     const ar = colored ? '3 / 4' : `1 / ${ratio.toFixed(4)}`;
     card.innerHTML = `
       <div class="item-slot">
-        <div class="doc ${shape} ${orient}${colored && isLightColor(m.cover) ? ' light' : ''}" style="--cover:${colored ? m.cover : '#fff'};aspect-ratio:${ar}">
+        <div class="doc ${shape} ${orient}${colored && (isDesign(m.cover) ? designLight(m.cover) : isLightColor(m.cover)) ? ' light' : ''}" style="${colored ? coverStyle(m.cover) : '--cover:#fff'};aspect-ratio:${ar}">
           ${colored ? '' : (m.thumb ? `<img src="${m.thumb}" alt="" draggable="false">` : '')}
           ${isPdf(m) ? '<span class="pdf-badge">PDF</span>' : ''}
           ${star(!!m.favorite, esc(m.title))}
@@ -1413,26 +1414,52 @@ function notebookMenu(anchor, m) {
   ]);
 }
 
-function coverMenu(anchor, m) {
-  const el = document.createElement('div');
-  el.innerHTML = '<div class="menu-title">Cover</div>';
+/** Cover-Auswahl: Designs, einfarbige Cover und „ohne Cover“ (erste Seite). */
+function buildCoverPicker(el, selected, onPick, noneLabel = 'Kein Cover') {
+  el.innerHTML = '';
+  el.classList.remove('swatches');
+  el.classList.add('cover-picker');
+  const head = (t) => el.insertAdjacentHTML('beforeend', `<div class="cp-head">${t}</div>`);
+  head('Designs');
+  const grid = document.createElement('div');
+  grid.className = 'cp-designs';
+  for (const [k, d] of Object.entries(COVER_DESIGNS)) {
+    const c = 'd:' + k;
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'cp-design' + (c === selected ? ' active' : '');
+    b.title = d.name;
+    b.setAttribute('aria-label', d.name);
+    b.style.cssText = coverStyle(c);
+    b.onclick = () => onPick(c);
+    grid.appendChild(b);
+  }
+  el.appendChild(grid);
+  head('Farben');
   const sw = document.createElement('div');
   sw.className = 'swatches';
-  sw.style.padding = '6px 10px 10px';
   for (const c of [...COVERS, 'none']) {
     const b = document.createElement('button');
-    b.className = 'swatch' + (c === 'none' ? ' none' : '') + (c === m.cover ? ' active' : '');
+    b.type = 'button';
+    b.className = 'swatch' + (c === 'none' ? ' none' : '') + (c === selected ? ' active' : '');
     b.style.setProperty('--c', c);
-    b.title = c === 'none' ? 'Erste Seite anzeigen' : c;
-    b.onclick = async () => {
-      closeMenu();
-      await db.patchNotebook(m.id, { cover: c });
-      renderLibrary();
-    };
+    b.title = c === 'none' ? noneLabel : c;
+    b.onclick = () => onPick(c);
     sw.appendChild(b);
   }
   el.appendChild(sw);
-  openMenu(anchor, el);
+}
+function coverMenu(anchor, m) {
+  const el = document.createElement('div');
+  el.innerHTML = '<div class="menu-title">Cover</div>';
+  const box = document.createElement('div');
+  el.appendChild(box);
+  buildCoverPicker(box, m.cover, async (c) => {
+    closeMenu();
+    await db.patchNotebook(m.id, { cover: c });
+    renderLibrary();
+  }, 'Erste Seite anzeigen');
+  openMenu(anchor, el, 'cover-menu');
 }
 
 /** Vergibt neue IDs für ein Notizbuch (Duplikat / Backup-Import). */
@@ -1492,21 +1519,11 @@ function buildPaperGrid(el, sel, onChange) {
 }
 function openNewDialog() {
   const dlg = $('#dlg-new');
-  const sel = { cover: COVERS[Math.floor(Math.random() * COVERS.length)], paper: 'lined', color: 'white', landscape: false };
+  const designs = Object.keys(COVER_DESIGNS);
+  const sel = { cover: 'd:' + designs[Math.floor(Math.random() * designs.length)], paper: 'lined', color: 'white', landscape: false };
   $('#new-title').value = '';
   const covers = $('#new-covers');
-  const drawCovers = () => {
-    covers.innerHTML = '';
-    for (const c of [...COVERS, 'none']) {
-      const b = document.createElement('button');
-      b.type = 'button';
-      b.className = 'swatch' + (c === 'none' ? ' none' : '') + (c === sel.cover ? ' active' : '');
-      b.style.setProperty('--c', c);
-      b.title = c === 'none' ? 'Kein Cover' : c;
-      b.onclick = () => { sel.cover = c; drawCovers(); };
-      covers.appendChild(b);
-    }
-  };
+  const drawCovers = () => buildCoverPicker(covers, sel.cover, (c) => { sel.cover = c; drawCovers(); });
   const drawPapers = () => buildPaperGrid($('#new-papers'), sel, (p) => { sel.paper = p; });
   drawCovers();
   drawPapers();
@@ -4379,7 +4396,7 @@ if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
 // Erkennt neue Versionen auf dem Server (z.B. nach einem Push auf GitHub)
 // anhand von ETag/Last-Modified und lädt die App dann neu. Funktioniert ohne
 // Versionsnummern, die man von Hand hochzählen müsste.
-const UPDATE_FILES = ['./', 'app.js', 'style.css', 'db.js', 'cloud.js', 'scan.js', 'legal.js'];
+const UPDATE_FILES = ['./', 'app.js', 'style.css', 'db.js', 'cloud.js', 'scan.js', 'legal.js', 'covers.js'];
 let versionSig = null;
 let updating = false;
 async function serverSignature() {

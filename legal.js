@@ -2,10 +2,11 @@
 // WICHTIG: Das Impressum enthält Platzhalter in [eckigen Klammern]. Bitte mit den echten
 // Angaben der Person ersetzen, die die Website betreibt. Die Texte sind keine Rechtsberatung.
 
-export const APP_VERSION = '1.9';
+export const APP_VERSION = '2.0';
 
-export const NEWS_VERSION = 9;
+export const NEWS_VERSION = 10;
 export const NEWS = [
+  { title: 'Cover-Designs', text: '12 neue Designs für deine Notizbücher – beim Erstellen oder über ⌄ → Cover ändern.' },
   { title: 'Vier echte Stifte', text: 'Füller mit schräger Feder, gleichmäßiger Kugelschreiber, Pinsel mit spitzen Enden und ein neuer rauer Buntstift.' },
   { title: 'Flüssiges Zoomen', text: 'Das Zoomen mit zwei Fingern läuft jetzt ruckelfrei, die Seite wird beim Loslassen scharf gezeichnet.' },
   { title: 'Zubehör', text: 'Tippe den Laserpointer nochmal an: Lineal, Zoom-Ansicht zum Schreiben in groß, Zeitmesser und Werkzeugleiste anpassen.' },
