@@ -39,6 +39,7 @@ function assetKeysOf(nb) {
     if (p.bg) keys.add(p.bg);
     for (const it of p.items || []) if (it.type === 'image') keys.add(it.asset);
   }
+  for (const r of nb.recordings || []) keys.add(r.asset);
   return [...keys];
 }
 

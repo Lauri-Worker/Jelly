@@ -66,6 +66,21 @@ const ICONS = {
   chevRight: '<path d="m9 6 6 6-6 6"/>',
   palette: '<path d="M12 3a9 9 0 0 0 0 18c1.1 0 1.5-.8 1.5-1.6 0-.9-.6-1.4-.6-2.2 0-.9.7-1.4 1.6-1.4H17a4 4 0 0 0 4-4c0-4.7-4-8.8-9-8.8z"/><circle cx="7.5" cy="11" r="1"/><circle cx="10.5" cy="7" r="1"/><circle cx="15" cy="7.5" r="1"/>',
   folderFill: '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" fill="currentColor"/>',
+  home: '<path d="M4 11 12 4l8 7"/><path d="M6 9.5V20h12V9.5"/>',
+  textbox: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M8 9h8M12 9v7"/>',
+  note: '<path d="M5 4h14a1 1 0 0 1 1 1v9l-6 6H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z"/><path d="M14 20v-5a1 1 0 0 1 1-1h5"/><path d="M8 9h8M8 12.5h5"/>',
+  laser: '<path d="m4 20 9-9"/><path d="M13 11l2-2"/><circle cx="17.5" cy="6.5" r="2.5"/><path d="M17.5 1.5v1.5M22.5 6.5H21M21 3l-1 1M14 3l1 1"/>',
+  mic: '<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>',
+  viewMode: '<rect x="3" y="4" width="8" height="16" rx="1.5"/><rect x="13" y="4" width="8" height="16" rx="1.5"/>',
+  pagePlus: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M12 11v6M9 14h6"/>',
+  moreCircle: '<circle cx="12" cy="12" r="9"/><circle cx="8" cy="12" r=".9"/><circle cx="12" cy="12" r=".9"/><circle cx="16" cy="12" r=".9"/>',
+  bookmarkFill: '<path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4.5L5 21V4a1 1 0 0 1 1-1z" fill="currentColor"/>',
+  shapeRec: '<path d="M4 17c2-6 5-9 8-9s5 2 8 0" stroke-dasharray="2 2.5"/><circle cx="7" cy="7" r="3"/><rect x="14" y="13" width="6" height="6" rx="1"/>',
+  pen_fountain: '<path d="M12 21v-5"/><path d="M12 16 8 9l4-6 4 6z"/><circle cx="12" cy="10" r="1"/>',
+  pen_ball: '<path d="M7 21 17 5"/><path d="m15 3 3 2-1.5 2.5-3-2z"/><path d="M7 21l.5-3 2 1.2z" fill="currentColor"/>',
+  pen_brush: '<path d="M19 3c-4 3-7 7-8 10l2 2c3-1 7-4 10-8"/><path d="M11 13c-2 0-4 1-4 4 0 1.5-1 3-3 3 3 1 7 1 8-3z"/>',
+  play: '<path d="M8 5v14l11-7z" fill="currentColor"/>',
+  pause: '<rect x="7" y="5" width="3.5" height="14" rx="1" fill="currentColor"/><rect x="13.5" y="5" width="3.5" height="14" rx="1" fill="currentColor"/>',
   share: '<path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><path d="m16 6-4-4-4 4"/><path d="M12 2v13"/>',
   page: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/>',
   file: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 15h6"/>',
@@ -182,11 +197,13 @@ const DEFAULT_PREFS = {
   penOnly: false,
   sidebar: true,
   tools: {
-    pen: { color: PEN_COLORS[0], width: 2.2 },
+    pen: { color: PEN_COLORS[0], width: 2.2, pen: 'fountain', shapeRec: false },
     highlighter: { color: HL_COLORS[0], width: 14 },
     eraser: { width: 18 },
     shape: { color: PEN_COLORS[0], width: 2.2, kind: 'rect' },
-    text: { color: PEN_COLORS[0], size: 20 },
+    text: { color: PEN_COLORS[0], size: 20, font: 'sans', bold: false, italic: false },
+    note: { color: '#fff3a3', size: 16 },
+    laser: { color: '#ff3b30' },
   },
 };
 function loadPrefs() {
@@ -212,7 +229,7 @@ function savePrefs() {
 const prefs = loadPrefs();
 const state = {
   nb: null,
-  tool: ['pen', 'highlighter', 'eraser', 'lasso', 'shape', 'text'].includes(prefs.tool) ? prefs.tool : 'pen',
+  tool: ['pen', 'highlighter', 'eraser', 'lasso', 'shape', 'text', 'note', 'laser'].includes(prefs.tool) ? prefs.tool : 'pen',
   tools: prefs.tools,
   penOnly: prefs.penOnly,
   sidebar: prefs.sidebar,
@@ -352,6 +369,16 @@ function drawPaper(ctx, page, nb = state.nb) {
 }
 
 const pf = (p) => 0.35 + p * 1.3; // Druck -> Breitenfaktor (0.5 => 1.0)
+const pfBrush = (p) => 0.12 + p * 1.76; // Pinsel: stärkerer Druckeffekt
+const PEN_TYPES = [['fountain', 'Füller'], ['ball', 'Kugelschreiber'], ['brush', 'Pinsel']];
+const FONTS = {
+  sans: ['Standard', FONT],
+  serif: ['Serif', 'Georgia, "Times New Roman", serif'],
+  mono: ['Schreibmaschine', '"SF Mono", Menlo, Consolas, "Courier New", monospace'],
+  hand: ['Handschrift', '"Noteworthy", "Marker Felt", "Comic Sans MS", "Segoe Print", cursive'],
+};
+const NOTE_COLORS = ['#fff3a3', '#ffd1e3', '#c9f1d0', '#cfe6ff', '#ffd9b3', '#e5d4ff'];
+const fontCss = (it) => `${it.italic ? 'italic ' : ''}${it.bold ? '700 ' : ''}${it.size}px ${(FONTS[it.font] || FONTS.sans)[1]}`;
 
 function tracePath(ctx, P) {
   ctx.beginPath();
@@ -378,6 +405,11 @@ function drawStroke(ctx, s, dark = false) {
     ctx.lineWidth = s.width;
     if (n === 1) { ctx.beginPath(); ctx.arc(P[0][0], P[0][1], s.width / 2, 0, Math.PI * 2); ctx.fill(); }
     else { tracePath(ctx, P); ctx.stroke(); }
+  } else if (s.pen === 'ball' && !s.straight) {
+    // Kugelschreiber: gleichmäßige Linie ohne Druck
+    ctx.lineWidth = s.width;
+    if (n === 1) { ctx.beginPath(); ctx.arc(P[0][0], P[0][1], s.width / 2, 0, Math.PI * 2); ctx.fill(); }
+    else { tracePath(ctx, P); ctx.stroke(); }
   } else if (s.straight) {
     ctx.lineWidth = s.width;
     ctx.beginPath();
@@ -398,7 +430,7 @@ function drawStroke(ctx, s, dark = false) {
       ctx.beginPath();
       ctx.moveTo(px, py);
       ctx.quadraticCurveTo(P[i][0], P[i][1], mx, my);
-      ctx.lineWidth = s.width * pf(P[i][2]);
+      ctx.lineWidth = s.width * (s.pen === 'brush' ? pfBrush(P[i][2]) : pf(P[i][2]));
       ctx.stroke();
       px = mx; py = my;
     }
@@ -418,10 +450,12 @@ function drawItem(ctx, it, nb, dark) {
     else {
       ctx.save(); ctx.fillStyle = 'rgba(127,127,127,.15)'; ctx.fillRect(it.x, it.y, it.w, it.h); ctx.restore();
     }
+  } else if (it.type === 'note') {
+    drawNote(ctx, it);
   } else if (it.type === 'text') {
     ctx.save();
     ctx.fillStyle = dark && it.color === PEN_COLORS[0] ? '#f2f2f2' : it.color;
-    ctx.font = `${it.size}px ${FONT}`;
+    ctx.font = fontCss(it);
     ctx.textBaseline = 'top';
     const lh = it.size * 1.25;
     // Kleiner Offset gleicht die Baseline-Unterschiede zur Textarea aus
@@ -431,12 +465,61 @@ function drawItem(ctx, it, nb, dark) {
   }
 }
 
+/** Bricht Text in Zeilen um, die in `maxW` passen. */
+function wrapLines(ctx, text, maxW) {
+  const out = [];
+  for (const para of text.split('\n')) {
+    let line = '';
+    for (const word of para.split(/(\s+)/)) {
+      const test = line + word;
+      if (line && ctx.measureText(test).width > maxW) { out.push(line.trimEnd()); line = word.trimStart(); }
+      else line = test;
+    }
+    out.push(line);
+  }
+  return out;
+}
+function drawNote(ctx, it) {
+  const { x, y, w, h } = it;
+  const fold = Math.min(w, h) * 0.14;
+  ctx.save();
+  ctx.shadowColor = 'rgba(0,0,0,.18)';
+  ctx.shadowBlur = 10;
+  ctx.shadowOffsetY = 3;
+  ctx.fillStyle = it.color;
+  ctx.beginPath();
+  ctx.moveTo(x, y); ctx.lineTo(x + w, y); ctx.lineTo(x + w, y + h - fold); ctx.lineTo(x + w - fold, y + h); ctx.lineTo(x, y + h);
+  ctx.closePath();
+  ctx.fill();
+  ctx.shadowColor = 'transparent';
+  // Eselsohr
+  ctx.fillStyle = 'rgba(0,0,0,.1)';
+  ctx.beginPath();
+  ctx.moveTo(x + w, y + h - fold); ctx.lineTo(x + w - fold, y + h - fold); ctx.lineTo(x + w - fold, y + h);
+  ctx.closePath();
+  ctx.fill();
+  // Text
+  if (it.text) {
+    ctx.fillStyle = '#2a2a2e';
+    ctx.font = `${it.size}px ${FONTS.hand[1]}`;
+    ctx.textBaseline = 'top';
+    const pad = 12, lh = it.size * 1.3;
+    const lines = wrapLines(ctx, it.text, w - pad * 2);
+    ctx.save();
+    ctx.beginPath(); ctx.rect(x, y, w, h - 4); ctx.clip();
+    lines.forEach((l, i) => ctx.fillText(l, x + pad, y + pad + i * lh));
+    ctx.restore();
+  }
+  ctx.restore();
+}
+
 function renderPage(ctx, page, opt = {}) {
   const nb = opt.nb || state.nb;
   const dark = page.color === 'dark';
   drawPaper(ctx, page, nb);
   for (const it of page.items) if (it.type === 'image' && it.id !== opt.skip) drawItem(ctx, it, nb, dark);
   for (const s of page.strokes) drawStroke(ctx, s, dark);
+  for (const it of page.items) if (it.type === 'note' && it.id !== opt.skip) drawItem(ctx, it, nb, dark);
   for (const it of page.items) if (it.type === 'text' && it.id !== opt.skip) drawItem(ctx, it, nb, dark);
 }
 
@@ -494,7 +577,8 @@ function itemAt(page, x, y, type) {
 }
 const measureCtx = document.createElement('canvas').getContext('2d');
 function measureText(it) {
-  measureCtx.font = `${it.size}px ${FONT}`;
+  if (it.type === 'note') return;
+  measureCtx.font = fontCss(it);
   const lines = it.text.split('\n');
   it.w = Math.max(10, ...lines.map((l) => measureCtx.measureText(l).width));
   it.h = lines.length * it.size * 1.25;
@@ -619,6 +703,7 @@ async function pruneAssets() {
   if (!nb) return;
   const used = new Set();
   for (const p of nb.pages) pageAssetKeys(p).forEach((k) => used.add(k));
+  for (const r of nb.recordings || []) used.add(r.asset);
   const unused = Object.keys(nb.assets).filter((k) => !used.has(k));
   if (!unused.length) return;
   unused.forEach((k) => { delete nb.assets[k]; imgCache.delete(nb.id + ':' + k); });
@@ -628,15 +713,21 @@ async function pruneAssets() {
 /* =====================================================================
    Bibliothek
    ===================================================================== */
+/** Speichert das offene Notizbuch und merkt sich Zoom und Scrollposition für den Tab. */
+async function leaveNotebook() {
+  if (!state.nb) return;
+  closeTextEditor();
+  clearSelection();
+  stopLaser();
+  if (rec) await stopRecording();
+  tabView.set(state.nb.id, { zoom: state.zoom, fit: state.fit, top: viewer.scrollTop, left: viewer.scrollLeft });
+  await pruneAssets().catch(console.error);
+  await saveNow();
+  state.nb = null;
+  imgCache.clear();
+}
 async function showLibrary() {
-  if (state.nb) {
-    closeTextEditor();
-    clearSelection();
-    await pruneAssets().catch(console.error);
-    await saveNow();
-    state.nb = null;
-    imgCache.clear();
-  }
+  await leaveNotebook();
   $('#editor').classList.add('hidden');
   $('#auth').classList.add('hidden');
   $('#library').classList.remove('hidden');
@@ -746,6 +837,7 @@ async function trashFolder(f) {
 }
 async function trashNotebook(m) {
   await db.patchNotebook(m.id, { trashed: Date.now() });
+  removeTab(m.id);
   toast('In den Papierkorb verschoben');
   renderLibrary();
 }
@@ -1192,8 +1284,11 @@ function openNewDialog() {
    Editor öffnen
    ===================================================================== */
 async function openNotebook(id) {
+  if (state.nb?.id === id) return;
+  await leaveNotebook();
   const nb = await db.loadNotebook(id);
-  if (!nb) { toast('Notizbuch nicht gefunden'); return showLibrary(); }
+  if (!nb) { toast('Notizbuch nicht gefunden'); removeTab(id); return showLibrary(); }
+  addTab(nb);
   state.nb = nb;
   state.history = [];
   state.future = [];
@@ -1212,10 +1307,13 @@ async function openNotebook(id) {
   applySidebar();
   setTool(state.tool);
   buildPages();
-  fitWidth();
-  $('#viewer').scrollTop = 0;
+  const tv = tabView.get(id);
+  if (tv && !tv.fit) { setZoom(tv.zoom, undefined, undefined); } else fitWidth();
+  viewer.scrollTop = tv ? tv.top : 0;
+  viewer.scrollLeft = tv ? tv.left : 0;
   buildThumbs();
   updateCurrent();
+  renderTabs();
 }
 
 /* =====================================================================
@@ -1238,6 +1336,7 @@ const io = new IntersectionObserver((entries) => {
 }, { root: viewer, rootMargin: '800px 200px' });
 
 function buildPages() {
+  stopLaser();
   io.disconnect();
   views.clear();
   pagesEl.innerHTML = '';
@@ -1247,6 +1346,7 @@ function buildPages() {
     wrap.dataset.id = page.id;
     const canvas = document.createElement('canvas');
     wrap.appendChild(canvas);
+    if (page.bookmarked) wrap.insertAdjacentHTML('beforeend', `<button class="page-ribbon" title="Lesezeichen entfernen" aria-label="Lesezeichen entfernen">${icon('bookmarkFill')}</button>`);
     pagesEl.appendChild(wrap);
     const v = { page, wrap, canvas, visible: false };
     views.set(page.id, v);
@@ -1414,7 +1514,7 @@ function buildThumbs() {
   el.innerHTML = '';
   state.nb.pages.forEach((p, i) => {
     const d = document.createElement('div');
-    d.className = 'thumb';
+    d.className = 'thumb' + (p.bookmarked ? ' bookmarked' : '');
     d.dataset.id = p.id;
     const c = document.createElement('canvas');
     c.width = 140; c.height = Math.round(140 * p.h / p.w);
@@ -1471,48 +1571,108 @@ function setTool(t) {
   savePrefs();
 }
 
+const TEXT_SIZE_LIST = [10, 12, 14, 16, 18, 20, 24, 28, 32, 40, 48, 64, 72];
+const LASER_COLORS = ['#ff3b30', '#2f6bff', '#22c55e'];
+function paletteFor(t) {
+  return t === 'highlighter' ? HL_COLORS : t === 'note' ? NOTE_COLORS : t === 'laser' ? LASER_COLORS : PEN_COLORS;
+}
+/** Wendet geänderte Textoptionen auch auf das gerade bearbeitete Textfeld an. */
+function applyTextCfgToEditing() {
+  if (!editing || editing.item.type !== 'text') return;
+  const c = state.tools.text;
+  Object.assign(editing.item, { size: c.size, color: c.color, font: c.font, bold: c.bold, italic: c.italic });
+  positionTextEditor();
+  editing.fit?.();
+}
 function renderOptions() {
   const t = state.tool, cfg = state.tools[t];
   const o = $('#options');
   let html = '';
+  if (t === 'pen') {
+    const cur = PEN_TYPES.find(([k]) => k === cfg.pen) || PEN_TYPES[0];
+    html += `<button class="opt-drop" data-act="pentype" title="Stiftart">${icon('pen_' + cur[0])}<span>${cur[1]}</span>${icon('chev')}</button>`;
+    html += `<button class="wbtn ${cfg.shapeRec ? 'active' : ''}" data-act="shaperec" title="Formerkennung: gezeichnete Linien, Kreise und Rechtecke werden begradigt">${icon('shapeRec')}</button>`;
+    html += '<span class="opt-sep"></span>';
+  }
   if (t === 'shape') {
     html += SHAPES.map(([k, n]) => `<button class="wbtn ${cfg.kind === k ? 'active' : ''}" data-shape="${k}" title="${n}">${icon(k)}</button>`).join('');
     html += '<span class="opt-sep"></span>';
   }
-  if (cfg && 'color' in cfg) {
-    const colors = t === 'highlighter' ? HL_COLORS : PEN_COLORS;
-    html += colors.map((c) => `<button class="swatch ${c === cfg.color ? 'active' : ''}" style="--c:${c}" data-color="${c}" title="${c}"></button>`).join('');
-    const custom = !colors.includes(cfg.color);
-    html += `<label class="swatch custom ${custom ? 'active' : ''}" title="Eigene Farbe" ${custom ? `style="background:${cfg.color}"` : ''}><input type="color" value="${cfg.color}"></label>`;
+  if (t === 'text') {
+    const f = FONTS[cfg.font] || FONTS.sans;
+    html += `<button class="opt-drop" data-act="font" title="Schriftart"><span style="font-family:${f[1].replace(/"/g, "'")}">Aa</span><span>${f[0]}</span>${icon('chev')}</button>`;
+    html += `<div class="stepper"><button class="wbtn" data-act="size-" title="Kleiner">${icon('minus')}</button><button class="opt-drop size-val" data-act="sizes" title="Schriftgröße">${cfg.size}<small>pt</small></button><button class="wbtn" data-act="size+" title="Größer">${icon('plus')}</button></div>`;
+    html += `<button class="wbtn ${cfg.bold ? 'active' : ''}" data-act="bold" title="Fett"><b style="font-size:17px">B</b></button>`;
+    html += `<button class="wbtn ${cfg.italic ? 'active' : ''}" data-act="italic" title="Kursiv"><i style="font-size:17px;font-family:Georgia,serif">I</i></button>`;
     html += '<span class="opt-sep"></span>';
   }
+  if (t === 'note') {
+    html += [[14, 'Klein'], [16, 'Mittel'], [20, 'Groß']].map(([sz, n], i) => `<button class="wbtn ${cfg.size === sz ? 'active' : ''}" data-size="${sz}" title="Schrift ${n}"><span style="font-size:${[12, 15, 19][i]}px;font-weight:600">A</span></button>`).join('');
+    html += '<span class="opt-sep"></span>';
+  }
+  if (cfg && 'color' in cfg) {
+    const colors = paletteFor(t);
+    html += colors.map((c) => `<button class="swatch ${c === cfg.color ? 'active' : ''}" style="--c:${c}" data-color="${c}" title="${c}"></button>`).join('');
+    if (t !== 'laser') {
+      const custom = !colors.includes(cfg.color);
+      html += `<label class="swatch custom ${custom ? 'active' : ''}" title="Eigene Farbe" ${custom ? `style="background:${cfg.color}"` : ''}><input type="color" value="${cfg.color}"></label>`;
+    }
+  }
   if (WIDTHS[t]) {
+    html += '<span class="opt-sep"></span>';
     html += WIDTHS[t].map((w, i) => {
       const d = [5, 9, 14][i];
       return `<button class="wbtn ${cfg.width === w ? 'active' : ''}" data-width="${w}" title="Stärke ${i + 1}"><span class="dot" style="width:${d}px;height:${d}px"></span></button>`;
     }).join('');
   }
-  if (t === 'text') {
-    html += TEXT_SIZES.map((s, i) => `<button class="wbtn ${cfg.size === s ? 'active' : ''}" data-size="${s}" title="Größe ${s}"><span style="font-size:${[12, 16, 21][i]}px;font-weight:600">A</span></button>`).join('');
-    html += '<span class="opt-hint">Tippe auf die Seite, um zu schreiben</span>';
-  }
+  if (t === 'text') html += '<span class="opt-hint">Tippe auf die Seite, um zu schreiben</span>';
+  if (t === 'note') html += '<span class="opt-hint">Tippe auf die Seite für eine Haftnotiz</span>';
+  if (t === 'laser') html += '<span class="opt-hint">Zeigen ohne zu schreiben – die Spur verblasst</span>';
   if (t === 'eraser') html += '<span class="opt-hint">Radiert ganze Striche</span>';
   if (t === 'lasso') html += '<span class="opt-hint">Umkreise Inhalte zum Verschieben, Skalieren oder Kopieren</span>';
   o.innerHTML = html;
   const ci = o.querySelector('input[type=color]');
-  if (ci) ci.addEventListener('input', (e) => { cfg.color = e.target.value; e.target.parentElement.style.background = cfg.color; o.querySelectorAll('.swatch').forEach((s) => s.classList.remove('active')); e.target.parentElement.classList.add('active'); savePrefs(); });
+  if (ci) ci.addEventListener('input', (e) => {
+    cfg.color = e.target.value;
+    e.target.parentElement.style.background = cfg.color;
+    o.querySelectorAll('.swatch').forEach((sw) => sw.classList.remove('active'));
+    e.target.parentElement.classList.add('active');
+    if (t === 'text') applyTextCfgToEditing();
+    savePrefs();
+  });
+}
+for (const ev of ['mousedown', 'pointerdown']) {
+  document.addEventListener(ev, (e) => { if (editing && e.target.closest?.('#options, .menu')) e.preventDefault(); }, true);
 }
 $('#options').addEventListener('click', (e) => {
   const b = e.target.closest('button');
   if (!b) return;
-  const cfg = state.tools[state.tool];
+  const t = state.tool, cfg = state.tools[t];
+  const done = () => { if (t === 'text') applyTextCfgToEditing(); renderOptions(); savePrefs(); };
   if (b.dataset.color) cfg.color = b.dataset.color;
   else if (b.dataset.width) cfg.width = +b.dataset.width;
   else if (b.dataset.size) cfg.size = +b.dataset.size;
   else if (b.dataset.shape) cfg.kind = b.dataset.shape;
-  else return;
-  renderOptions();
-  savePrefs();
+  else if (b.dataset.act === 'shaperec') {
+    cfg.shapeRec = !cfg.shapeRec;
+    toast(cfg.shapeRec ? 'Formerkennung an: Linien, Kreise und Rechtecke werden begradigt' : 'Formerkennung aus');
+  } else if (b.dataset.act === 'bold') cfg.bold = !cfg.bold;
+  else if (b.dataset.act === 'italic') cfg.italic = !cfg.italic;
+  else if (b.dataset.act === 'size-' || b.dataset.act === 'size+') {
+    const i = TEXT_SIZE_LIST.findIndex((x) => x >= cfg.size);
+    const idx = b.dataset.act === 'size+' ? Math.min(TEXT_SIZE_LIST.length - 1, (TEXT_SIZE_LIST[i] === cfg.size ? i : i - 1) + 1) : Math.max(0, (i < 0 ? TEXT_SIZE_LIST.length : i) - 1);
+    cfg.size = TEXT_SIZE_LIST[idx];
+  } else if (b.dataset.act === 'sizes') {
+    openMenu(b, TEXT_SIZE_LIST.map((sz) => ({ label: sz + ' pt', check: cfg.size === sz, action: () => { cfg.size = sz; done(); } })), 'size-menu');
+    return;
+  } else if (b.dataset.act === 'font') {
+    openMenu(b, Object.entries(FONTS).map(([k, [n]]) => ({ label: n, check: cfg.font === k, action: () => { cfg.font = k; done(); } })));
+    return;
+  } else if (b.dataset.act === 'pentype') {
+    openMenu(b, PEN_TYPES.map(([k, n]) => ({ label: n, icon: 'pen_' + k, check: cfg.pen === k, action: () => { cfg.pen = k; done(); } })));
+    return;
+  } else return;
+  done();
 });
 $('#tools').addEventListener('click', (e) => {
   const b = e.target.closest('.tool[data-tool]');
@@ -1534,7 +1694,7 @@ function getPt(e, v) {
 viewer.addEventListener('contextmenu', (e) => e.preventDefault());
 
 viewer.addEventListener('pointerdown', (e) => {
-  if (e.target.closest('.sel-menu, .text-editor, .pages-end')) return;
+  if (e.target.closest('.sel-menu, .text-editor, .pages-end, .page-ribbon')) return;
   if (e.pointerType === 'touch') {
     touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (touches.size === 2) { abortAction(); startPinch(); return; }
@@ -1542,7 +1702,7 @@ viewer.addEventListener('pointerdown', (e) => {
   }
   if (pinch) return;
   if (e.pointerType === 'mouse' && e.button !== 0) return;
-  if (editing) { closeTextEditor(); if (state.tool === 'text') return; }
+  if (editing) { closeTextEditor(); if (state.tool === 'text' || state.tool === 'note') return; }
 
   const wrap = e.target.closest('.page');
   // Finger: im „Nur Stift“-Modus oder außerhalb einer Seite wird gescrollt
@@ -1574,6 +1734,8 @@ viewer.addEventListener('pointerdown', (e) => {
     case 'lasso': return startLasso(v, pt, e);
     case 'shape': return startShape(v, pt, e);
     case 'text': act = { type: 'text', id: e.pointerId, v, pt }; return;
+    case 'note': act = { type: 'note', id: e.pointerId, v, pt }; return;
+    case 'laser': return startLaser(v, e);
   }
 });
 
@@ -1590,6 +1752,7 @@ viewer.addEventListener('pointermove', (e) => {
       act.x = e.clientX; act.y = e.clientY;
       break;
     case 'stroke': addStrokePoints(e); break;
+    case 'laser': addLaserPoints(e); break;
     case 'erase': eraseTo(getPt(e, act.v)); break;
     case 'lasso': {
       const pt = getPt(e, act.v);
@@ -1626,6 +1789,10 @@ function endPointer(e) {
     case 'shape': {
       detachLive();
       if (a.type === 'shape' && a.s.points.length < 2) break;
+      if (a.type === 'stroke' && a.s.tool === 'pen' && state.tools.pen.shapeRec) {
+        const rec = recognizeShape(a.s.points);
+        if (rec) Object.assign(a.s, { tool: 'shape', straight: true, points: rec, pen: undefined });
+      }
       const page = a.v.page;
       const before = snap(page);
       page.strokes.push(a.s);
@@ -1646,12 +1813,24 @@ function endPointer(e) {
       commit(a.v.page, a.before);
       renderSelection();
       break;
+    case 'laser':
+      break;
     case 'text': {
-      const it = itemAt(a.v.page, a.pt[0], a.pt[1], 'text');
+      const it = itemAt(a.v.page, a.pt[0], a.pt[1], 'text') || itemAt(a.v.page, a.pt[0], a.pt[1], 'note');
       if (it) openTextEditor(a.v, it, false);
       else {
         const cfg = state.tools.text;
-        openTextEditor(a.v, { id: uid(), type: 'text', x: r1(a.pt[0]), y: r1(a.pt[1] - cfg.size * 0.6), text: '', size: cfg.size, color: cfg.color, w: 0, h: 0 }, true);
+        openTextEditor(a.v, { id: uid(), type: 'text', x: r1(a.pt[0]), y: r1(a.pt[1] - cfg.size * 0.6), text: '', size: cfg.size, color: cfg.color, font: cfg.font, bold: cfg.bold, italic: cfg.italic, w: 0, h: 0 }, true);
+      }
+      break;
+    }
+    case 'note': {
+      const it = itemAt(a.v.page, a.pt[0], a.pt[1], 'note');
+      if (it) openTextEditor(a.v, it, false);
+      else {
+        const cfg = state.tools.note, w = 160, h = 160;
+        const x = clamp(a.pt[0] - w / 2, 4, a.v.page.w - w - 4), y = clamp(a.pt[1] - 24, 4, a.v.page.h - h - 4);
+        openTextEditor(a.v, { id: uid(), type: 'note', x: r1(x), y: r1(y), w, h, text: '', size: cfg.size, color: cfg.color }, true);
       }
       break;
     }
@@ -1697,6 +1876,7 @@ function movePinch() {
 function startStroke(v, e, tool) {
   const cfg = state.tools[tool];
   act = { type: 'stroke', id: e.pointerId, v, s: { id: uid(), tool, color: cfg.color, width: cfg.width, points: [] } };
+  if (tool === 'pen' && cfg.pen && cfg.pen !== 'fountain') act.s.pen = cfg.pen;
   attachLive(v);
   addStrokePoints(e);
 }
@@ -1716,6 +1896,111 @@ function addStrokePoints(e) {
     P.push([r1(x), r1(y), Math.round(p * 100) / 100]);
   }
   scheduleLive();
+}
+
+/* ---------- Formerkennung ---------- */
+/** Erkennt Linie, Ellipse oder Rechteck in einem gezeichneten Strich; gibt Formpunkte oder null zurück. */
+function recognizeShape(P) {
+  if (P.length < 6) return null;
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity, len = 0;
+  P.forEach((p, i) => {
+    x0 = Math.min(x0, p[0]); y0 = Math.min(y0, p[1]); x1 = Math.max(x1, p[0]); y1 = Math.max(y1, p[1]);
+    if (i) len += Math.hypot(p[0] - P[i - 1][0], p[1] - P[i - 1][1]);
+  });
+  const w = x1 - x0, h = y1 - y0, size = Math.max(w, h);
+  if (size < 18) return null;
+  const A = P[0], B = P[P.length - 1];
+  const d = Math.hypot(B[0] - A[0], B[1] - A[1]);
+  // Gerade Linie
+  if (d > 24 && d > len * 0.9) {
+    const maxDev = Math.max(...P.map((p) => distSeg(p[0], p[1], A[0], A[1], B[0], B[1])));
+    if (maxDev < Math.max(5, d * 0.06)) return shapePoints('line', [A[0], A[1]], [B[0], B[1]]);
+  }
+  // Geschlossene Formen
+  if (d > size * 0.3 || Math.min(w, h) < 12) return null;
+  const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2, rx = w / 2, ry = h / 2;
+  const ellErr = P.reduce((sum, p) => sum + Math.abs(Math.hypot((p[0] - cx) / rx, (p[1] - cy) / ry) - 1), 0) / P.length;
+  const tol = Math.min(w, h) * 0.12;
+  const nearEdge = P.filter((p) => Math.min(Math.abs(p[0] - x0), Math.abs(p[0] - x1), Math.abs(p[1] - y0), Math.abs(p[1] - y1)) < tol).length / P.length;
+  if (nearEdge > 0.8 && ellErr > 0.08) return shapePoints('rect', [x0, y0], [x1, y1]);
+  if (ellErr < 0.16) return shapePoints('ellipse', [x0, y0], [x1, y1]);
+  if (nearEdge > 0.7) return shapePoints('rect', [x0, y0], [x1, y1]);
+  return null;
+}
+
+/* ---------- Laserpointer ---------- */
+const laserCv = document.createElement('canvas');
+laserCv.className = 'live laser';
+let laser = null; // { v, trails: [{ pts: [[x, y, t]], color }], raf }
+const LASER_FADE = 900;
+function startLaser(v, e) {
+  if (!laser || laser.v !== v) {
+    stopLaser();
+    laser = { v, trails: [], raf: 0 };
+    laserCv.width = v.canvas.width || Math.round(v.page.w * viewScale(v.page));
+    laserCv.height = v.canvas.height || Math.round(v.page.h * viewScale(v.page));
+    v.wrap.appendChild(laserCv);
+  }
+  const tr = { pts: [], color: state.tools.laser.color };
+  laser.trails.push(tr);
+  act = { type: 'laser', id: e.pointerId, v, tr };
+  addLaserPoints(e);
+  if (!laser.raf) laser.raf = requestAnimationFrame(drawLaser);
+}
+function addLaserPoints(e) {
+  const evs = (e.getCoalescedEvents && e.getCoalescedEvents()) || [];
+  const now = performance.now();
+  for (const ev of evs.length ? evs : [e]) {
+    const [x, y] = getPt(ev, act.v);
+    act.tr.pts.push([x, y, now]);
+  }
+}
+function drawLaser() {
+  if (!laser) return;
+  laser.raf = 0;
+  const now = performance.now();
+  const ctx = laserCv.getContext('2d');
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.clearRect(0, 0, laserCv.width, laserCv.height);
+  const page = laser.v.page;
+  ctx.setTransform(laserCv.width / page.w, 0, 0, laserCv.height / page.h, 0, 0);
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  for (const tr of laser.trails) {
+    const active = act && act.tr === tr;
+    tr.pts = tr.pts.filter((p) => now - p[2] < LASER_FADE || (active && p === tr.pts[tr.pts.length - 1]));
+    for (let i = 1; i < tr.pts.length; i++) {
+      const a = tr.pts[i - 1], b = tr.pts[i];
+      const alpha = Math.max(0, 1 - (now - b[2]) / LASER_FADE);
+      ctx.globalAlpha = alpha;
+      ctx.strokeStyle = tr.color;
+      ctx.shadowColor = tr.color;
+      ctx.shadowBlur = 14;
+      ctx.lineWidth = 5;
+      ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke();
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 1.6;
+      ctx.stroke();
+    }
+    const last = tr.pts[tr.pts.length - 1];
+    if (active && last) {
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = tr.color;
+      ctx.shadowColor = tr.color; ctx.shadowBlur = 18;
+      ctx.beginPath(); ctx.arc(last[0], last[1], 6, 0, Math.PI * 2); ctx.fill();
+      ctx.shadowBlur = 0;
+    }
+  }
+  laser.trails = laser.trails.filter((tr) => tr.pts.length || (act && act.tr === tr));
+  if (laser.trails.length) laser.raf = requestAnimationFrame(drawLaser);
+  else stopLaser();
+}
+function stopLaser() {
+  if (!laser) return;
+  cancelAnimationFrame(laser.raf);
+  laserCv.remove();
+  laser = null;
 }
 
 /* ---------- Radierer ---------- */
@@ -1943,20 +2228,23 @@ let editing = null;
 function openTextEditor(v, item, isNew) {
   closeTextEditor();
   const ta = document.createElement('textarea');
-  ta.className = 'text-editor';
+  const isNote = item.type === 'note';
+  ta.className = 'text-editor' + (isNote ? ' note-editor' : '');
   ta.value = item.text;
-  ta.wrap = 'off';
+  ta.wrap = isNote ? 'soft' : 'off';
   ta.spellcheck = true;
   editing = { v, item, ta, isNew, before: snap(v.page) };
   positionTextEditor();
   v.wrap.appendChild(ta);
   scheduleRender(v);
   const fit = () => {
+    if (isNote) return;
     ta.style.height = '0px';
     ta.style.width = '0px';
     ta.style.height = ta.scrollHeight + 'px';
     ta.style.width = Math.max(40, ta.scrollWidth + 4) + 'px';
   };
+  editing.fit = fit;
   ta.addEventListener('input', fit);
   ta.addEventListener('blur', () => closeTextEditor());
   ta.addEventListener('keydown', (e) => {
@@ -1970,9 +2258,18 @@ function openTextEditor(v, item, isNew) {
 function positionTextEditor() {
   if (!editing) return;
   const { item, ta } = editing, z = state.zoom;
+  if (item.type === 'note') {
+    Object.assign(ta.style, {
+      left: item.x * z + 'px', top: item.y * z + 'px', width: item.w * z + 'px', height: item.h * z + 'px',
+      padding: 12 * z + 'px', fontSize: item.size * z + 'px', lineHeight: '1.3', background: item.color,
+      fontFamily: FONTS.hand[1],
+    });
+    return;
+  }
   Object.assign(ta.style, {
     left: item.x * z + 'px', top: item.y * z + 'px',
     fontSize: item.size * z + 'px', color: item.color,
+    fontFamily: (FONTS[item.font] || FONTS.sans)[1], fontWeight: item.bold ? '700' : '400', fontStyle: item.italic ? 'italic' : 'normal',
   });
   ta.style.height = 'auto';
   ta.style.height = ta.scrollHeight + 'px';
@@ -1984,7 +2281,10 @@ function closeTextEditor() {
   const text = ta.value.replace(/\s+$/, '');
   ta.remove();
   const page = v.page;
-  if (!text) {
+  if (item.type === 'note') {
+    item.text = text;
+    if (isNew) page.items.push(item);
+  } else if (!text) {
     if (!isNew) page.items = page.items.filter((i) => i.id !== item.id);
   } else {
     item.text = text;
@@ -2476,6 +2776,7 @@ for (const el of document.querySelectorAll('[data-icon]')) el.innerHTML = icon(e
 
 function applySidebar() {
   $('#sidebar').classList.toggle('hidden', !state.sidebar);
+  $('.editor-body').classList.toggle('with-side', state.sidebar && !isNarrow());
   $('#btn-sidebar').classList.toggle('active', state.sidebar);
   if (state.sidebar && state.nb) queueAllThumbs();
 }
@@ -2528,6 +2829,17 @@ $('#btn-export').onclick = (e) => openMenu(e.currentTarget, [
   { label: 'Backup exportieren (.json)', icon: 'file', action: async () => { await saveNow(); exportBackup(state.nb); } },
 ]);
 $('#btn-more').onclick = (e) => openMenu(e.currentTarget, [
+  { label: 'Umbenennen', icon: 'edit', action: async () => {
+    const t = await ask({ title: 'Umbenennen', input: state.nb.title, ok: 'Speichern' });
+    if (!t?.trim() || !state.nb) return;
+    state.nb.title = t.trim();
+    $('#nb-title').value = state.nb.title;
+    document.title = state.nb.title + ' – Jelly Notes';
+    updateTabTitle(state.nb.id, state.nb.title);
+    scheduleSave();
+  } },
+  { label: 'Zu Favoriten', icon: 'star', check: !!state.nb?.favorite, action: () => { state.nb.favorite = !state.nb.favorite; scheduleSave(); } },
+  '-',
   { label: 'Nur Stift zeichnet (Finger scrollen)', icon: 'hand', check: state.penOnly, action: () => {
     state.penOnly = !state.penOnly;
     savePrefs();
@@ -2536,7 +2848,7 @@ $('#btn-more').onclick = (e) => openMenu(e.currentTarget, [
   { label: 'Seitenübersicht', icon: 'sidebar', check: state.sidebar, action: () => $('#btn-sidebar').click() },
   '-',
   { label: 'Tastenkürzel', icon: 'more', action: () => ask({ title: 'Tastenkürzel', cancel: '', message:
-    'P Stift · H Textmarker · E Radierer · L Lasso · S Formen · T Text\n' +
+    'P Stift · H Textmarker · E Radierer · L Lasso · S Formen · T Text · N Haftnotiz · K Laserpointer\n' +
     'Strg+Z Rückgängig · Strg+Umschalt+Z Wiederholen\n' +
     'Strg+C / Strg+V Auswahl kopieren / einfügen · Entf Auswahl löschen\n' +
     'Strg + Mausrad oder Zwei-Finger-Geste: Zoomen\n' +
@@ -2559,7 +2871,7 @@ document.addEventListener('keydown', (e) => {
   if (mod || e.altKey) return;
   if ((k === 'delete' || k === 'backspace') && state.selection) { e.preventDefault(); deleteSelection(); return; }
   if (k === 'escape') { clearSelection(); closeMenu(); return; }
-  const map = { p: 'pen', h: 'highlighter', e: 'eraser', l: 'lasso', s: 'shape', t: 'text' };
+  const map = { p: 'pen', h: 'highlighter', e: 'eraser', l: 'lasso', s: 'shape', t: 'text', n: 'note', k: 'laser' };
   if (map[k]) setTool(map[k]);
   if (k === 'pagedown') { e.preventDefault(); scrollToPage(Math.min(state.cur + 1, state.nb.pages.length - 1), true); }
   if (k === 'pageup') { e.preventDefault(); scrollToPage(Math.max(state.cur - 1, 0), true); }
@@ -2586,6 +2898,207 @@ for (const ev of ['dragover', 'drop']) {
 }
 document.addEventListener('visibilitychange', () => { if (document.hidden && saveTimer) saveNow(); });
 window.addEventListener('pagehide', () => { if (saveTimer) saveNow(); });
+
+/* =====================================================================
+   Editor: Tabs, Lesezeichen, Suche, Sprachaufnahme, Ansicht
+   ===================================================================== */
+const TABS_KEY = 'jelly.tabs';
+const tabView = new Map(); // id -> { zoom, fit, top, left }
+let tabs = (() => { try { return JSON.parse(localStorage.getItem(TABS_KEY) || '[]'); } catch { return []; } })();
+function saveTabs() { try { localStorage.setItem(TABS_KEY, JSON.stringify(tabs)); } catch { /* */ } }
+function addTab(nb) {
+  const t = tabs.find((x) => x.id === nb.id);
+  if (t) t.title = nb.title;
+  else tabs.push({ id: nb.id, title: nb.title });
+  saveTabs();
+}
+function updateTabTitle(id, title) {
+  const t = tabs.find((x) => x.id === id);
+  if (t) { t.title = title; saveTabs(); renderTabs(); }
+}
+function removeTab(id) {
+  tabs = tabs.filter((x) => x.id !== id);
+  tabView.delete(id);
+  saveTabs();
+  renderTabs();
+}
+async function closeTab(id) {
+  const i = tabs.findIndex((x) => x.id === id);
+  const wasOpen = state.nb?.id === id;
+  if (wasOpen) await leaveNotebook();
+  removeTab(id);
+  if (!wasOpen) return;
+  const next = tabs[Math.min(i, tabs.length - 1)];
+  if (next) openNotebook(next.id); else showLibrary();
+}
+function renderTabs() {
+  const el = $('#tabs');
+  el.innerHTML = '';
+  for (const t of tabs) {
+    const active = state.nb?.id === t.id;
+    const b = document.createElement('div');
+    b.className = 'tab' + (active ? ' active' : '');
+    b.setAttribute('role', 'tab');
+    b.setAttribute('aria-selected', active);
+    b.innerHTML = `<button class="tab-main" type="button" title="${esc(t.title)}"><span>${esc(t.title)}</span></button><button class="tab-close" type="button" title="Tab schließen" aria-label="${esc(t.title)} schließen">${icon('close')}</button>`;
+    b.querySelector('.tab-main').onclick = () => { if (!active) openNotebook(t.id); };
+    b.querySelector('.tab-close').onclick = (e) => { e.stopPropagation(); closeTab(t.id); };
+    el.appendChild(b);
+  }
+  el.querySelector('.tab.active')?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+}
+
+/* Lesezeichen */
+function toggleBookmark(page = currentPage()) {
+  page.bookmarked = !page.bookmarked;
+  const v = views.get(page.id);
+  if (v) {
+    v.wrap.querySelector('.page-ribbon')?.remove();
+    if (page.bookmarked) v.wrap.insertAdjacentHTML('beforeend', `<button class="page-ribbon" title="Lesezeichen entfernen" aria-label="Lesezeichen entfernen">${icon('bookmarkFill')}</button>`);
+  }
+  $(`.thumb[data-id="${page.id}"]`)?.classList.toggle('bookmarked', !!page.bookmarked);
+  toast(page.bookmarked ? `Lesezeichen auf Seite ${pageIndex(page.id) + 1} gesetzt` : 'Lesezeichen entfernt');
+  scheduleSave();
+}
+pagesEl.addEventListener('click', (e) => {
+  const r = e.target.closest('.page-ribbon');
+  if (r) toggleBookmark(findPage(r.closest('.page').dataset.id));
+});
+$('#btn-bookmarks').onclick = (e) => {
+  const cur = currentPage();
+  const marked = state.nb.pages.map((p, i) => [p, i]).filter(([p]) => p.bookmarked);
+  openMenu(e.currentTarget, [
+    { label: cur.bookmarked ? `Lesezeichen von Seite ${state.cur + 1} entfernen` : `Lesezeichen auf Seite ${state.cur + 1} setzen`, icon: 'bookmark', action: () => toggleBookmark(cur) },
+    ...(marked.length ? ['-', ...marked.map(([, i]) => ({ label: `Seite ${i + 1}`, icon: 'bookmarkFill', action: () => scrollToPage(i, true) }))] : []),
+  ]);
+};
+
+/* Suche im Dokument (Textfelder und Haftnotizen) */
+$('#btn-doc-search').onclick = (e) => {
+  const el = document.createElement('div');
+  el.className = 'doc-search';
+  el.innerHTML = `<div class="doc-search-field">${icon('search')}<input type="search" placeholder="Text im Dokument suchen" autocomplete="off"></div><div class="doc-search-res"></div>`;
+  const input = el.querySelector('input'), res = el.querySelector('.doc-search-res');
+  const run = () => {
+    const q = input.value.trim().toLowerCase();
+    res.innerHTML = '';
+    if (!q) { res.innerHTML = '<p class="doc-search-hint">Durchsucht Textfelder und Haftnotizen. Handschrift und PDF-Text werden nicht erkannt.</p>'; return; }
+    const hits = [];
+    state.nb.pages.forEach((p, i) => p.items.forEach((it) => {
+      if ((it.type === 'text' || it.type === 'note') && it.text?.toLowerCase().includes(q)) hits.push([i, it]);
+    }));
+    if (!hits.length) { res.innerHTML = '<p class="doc-search-hint">Keine Treffer.</p>'; return; }
+    for (const [i, it] of hits.slice(0, 50)) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'menu-item';
+      const pos = it.text.toLowerCase().indexOf(q);
+      const snip = it.text.slice(Math.max(0, pos - 20), pos + q.length + 30).replace(/\n/g, ' ');
+      b.innerHTML = `<span><b>Seite ${i + 1}</b> · ${esc(snip)}</span>`;
+      b.onclick = () => { closeMenu(); scrollToPage(i, true); };
+      res.appendChild(b);
+    }
+  };
+  input.addEventListener('input', run);
+  openMenu(e.currentTarget, el, 'search-menu');
+  run();
+  setTimeout(() => input.focus(), 30);
+};
+
+/* Sprachaufnahme */
+let rec = null; // { mr, chunks, start, timer, stream }
+function fmtDur(ms) { const sec = Math.round(ms / 1000); return `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`; }
+async function startRecording() {
+  if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) { toast('Sprachaufnahme wird von diesem Browser nicht unterstützt'); return; }
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const mr = new MediaRecorder(stream);
+    rec = { mr, chunks: [], start: Date.now(), stream, page: state.cur, nbId: state.nb.id };
+    mr.ondataavailable = (e) => { if (e.data.size) rec?.chunks.push(e.data); };
+    mr.start(1000);
+    const btn = $('#btn-mic');
+    btn.classList.add('recording');
+    $('#rec-time').hidden = false;
+    rec.timer = setInterval(() => { $('#rec-time').textContent = fmtDur(Date.now() - rec.start); }, 250);
+    $('#rec-time').textContent = '0:00';
+    toast('Aufnahme läuft – tippe erneut auf das Mikrofon zum Beenden');
+  } catch (err) {
+    console.error(err);
+    toast('Kein Zugriff auf das Mikrofon. Erlaube den Zugriff in den Einstellungen deines Browsers.', 5000);
+  }
+}
+async function stopRecording() {
+  if (!rec) return;
+  const r = rec;
+  rec = null;
+  clearInterval(r.timer);
+  $('#btn-mic').classList.remove('recording');
+  $('#rec-time').hidden = true;
+  await new Promise((res) => { r.mr.onstop = res; r.mr.stop(); });
+  r.stream.getTracks().forEach((t) => t.stop());
+  const blob = new Blob(r.chunks, { type: r.mr.mimeType || 'audio/mp4' });
+  if (!blob.size || !state.nb || state.nb.id !== r.nbId) return;
+  const key = uid();
+  state.nb.assets[key] = await readAsDataURL(blob);
+  state.nb.recordings = state.nb.recordings || [];
+  state.nb.recordings.push({ id: uid(), asset: key, mime: blob.type, duration: Date.now() - r.start, createdAt: Date.now(), page: r.page });
+  scheduleSave();
+  toast(`Aufnahme gespeichert (${fmtDur(Date.now() - r.start)})`);
+}
+let player = null;
+$('#btn-mic').onclick = (e) => {
+  if (rec) { stopRecording(); return; }
+  const list = state.nb.recordings || [];
+  const el = document.createElement('div');
+  el.className = 'rec-list';
+  el.innerHTML = `<button class="menu-item rec-start" type="button">${icon('mic')}<span>Aufnahme starten</span></button>` +
+    (list.length ? '<div class="menu-sep"></div><div class="menu-title">Aufnahmen</div>' : '') +
+    list.map((r, i) => `<div class="rec-row" data-id="${r.id}">
+      <button class="rec-play" type="button" aria-label="Abspielen">${icon('play')}</button>
+      <div class="rec-info"><b>Aufnahme ${i + 1}</b><span>${fmtDur(r.duration)} · Seite ${r.page + 1} · ${dateFmt.format(r.createdAt)}</span></div>
+      <button class="rec-del" type="button" aria-label="Aufnahme löschen">${icon('trash')}</button></div>`).join('');
+  el.querySelector('.rec-start').onclick = () => { closeMenu(); startRecording(); };
+  el.addEventListener('click', async (ev) => {
+    const row = ev.target.closest('.rec-row');
+    if (!row) return;
+    const r = list.find((x) => x.id === row.dataset.id);
+    if (ev.target.closest('.rec-play')) {
+      const btn = row.querySelector('.rec-play');
+      if (player && player.id === r.id && !player.audio.paused) { player.audio.pause(); btn.innerHTML = icon('play'); return; }
+      player?.audio.pause();
+      el.querySelectorAll('.rec-play').forEach((p) => { p.innerHTML = icon('play'); });
+      player = { id: r.id, audio: new Audio(state.nb.assets[r.asset]) };
+      player.audio.onended = () => { btn.innerHTML = icon('play'); };
+      btn.innerHTML = icon('pause');
+      player.audio.play().catch(() => toast('Die Aufnahme konnte nicht abgespielt werden'));
+    } else if (ev.target.closest('.rec-del')) {
+      if (!(await ask({ title: 'Aufnahme löschen?', message: 'Die Aufnahme wird endgültig gelöscht.', ok: 'Löschen', danger: true }))) return;
+      state.nb.recordings = state.nb.recordings.filter((x) => x.id !== r.id);
+      scheduleSave();
+      toast('Aufnahme gelöscht');
+    }
+  });
+  openMenu(e.currentTarget, el, 'rec-menu');
+};
+
+/* Ansicht */
+function fitPage() {
+  const p = currentPage();
+  const z = clamp((viewer.clientHeight - 40) / p.h, 0.25, 2);
+  state.fit = false;
+  setZoom(z);
+  scrollToPage(state.cur);
+}
+$('#btn-view').onclick = (e) => openMenu(e.currentTarget, [
+  { label: 'An Seitenbreite anpassen', icon: 'viewMode', action: fitWidth },
+  { label: 'Ganze Seite anzeigen', icon: 'page', action: fitPage },
+  '-',
+  { label: 'Seitenübersicht', icon: 'sidebar', check: state.sidebar, action: () => $('#btn-sidebar').click() },
+  { label: 'Nur Stift zeichnet', icon: 'hand', check: state.penOnly, action: () => { state.penOnly = !state.penOnly; savePrefs(); } },
+  '-',
+  { label: 'Papier und Seite …', icon: 'grid', action: () => pageMenu($('#btn-page')) },
+]);
+renderTabs();
 
 /* =====================================================================
    Bibliothek: Seitenleiste, Kopfleiste, Profil-Menü
@@ -2914,6 +3427,8 @@ async function enterAccount() {
 }
 async function signOut() {
   if (state.nb) { await saveNow(); state.nb = null; imgCache.clear(); }
+  tabs = [];
+  saveTabs();
   await auth.signOut();
   $('#nb-grid').innerHTML = '';
   if (location.hash) history.replaceState(null, '', location.pathname + location.search);

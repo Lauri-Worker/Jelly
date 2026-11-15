@@ -14,6 +14,9 @@ Eine Notiz-Web-App im Stil digitaler Notizbücher: handschriftlich schreiben, PD
 - **Radierer:** entfernt ganze Striche. Das Radierer-Ende eines Stifts wird erkannt.
 - **Lasso:** auswählen, verschieben, skalieren, umfärben, duplizieren, kopieren und einfügen, löschen
 - **Formen:** Linie, Pfeil, Rechteck, Ellipse. Mit Umschalt entstehen Quadrat bzw. Kreis.
+- **Tabs:** geöffnete Notizbücher bleiben oben als Tabs offen (auch nach dem Neuladen)
+- **Stiftarten** Füller, Kugelschreiber, Pinsel; **Formerkennung** begradigt Linien, Kreise und Rechtecke
+- **Textfelder** mit Schriftart, Schriftgröße, fett und kursiv; **Haftnotizen**; **Laserpointer**; **Sprachaufnahmen**; **Lesezeichen**; **Suche** in Textfeldern und Haftnotizen
 - **Textfelder** und **Bilder** (über Button, Drag-and-drop oder Einfügen aus der Zwischenablage)
 - **PDF-Import** als neues Notizbuch oder über **Einfügen → PDF einfügen** direkt in ein Notizbuch, um PDFs zu annotieren
 - **Dokumente scannen** mit der Kamera: Blattecken werden automatisch erkannt und lassen sich nachziehen, das Blatt wird entzerrt und aufgehellt (Farbe, Graustufen, S/W oder Original). Mehrere Seiten nacheinander, Einfügen ins offene Notizbuch oder als neues Notizbuch.

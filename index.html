@@ -96,35 +96,46 @@
 
   <!-- Editor -->
   <section id="editor" class="view hidden">
-    <header class="topbar">
-      <div class="tb-group">
-        <button class="ibtn" id="btn-back" title="Zur Bibliothek"><span data-icon="back"></span></button>
-        <button class="ibtn" id="btn-sidebar" title="Seitenübersicht"><span data-icon="sidebar"></span></button>
-        <input id="nb-title" class="title-input" spellcheck="false" aria-label="Titel">
-        <span id="save-status" class="save-status"></span>
-      </div>
-      <div class="tb-group">
-        <button class="ibtn" id="btn-undo" title="Rückgängig (Strg+Z)"><span data-icon="undo"></span></button>
-        <button class="ibtn" id="btn-redo" title="Wiederholen (Strg+Umschalt+Z)"><span data-icon="redo"></span></button>
-        <span class="tb-sep"></span>
-        <button class="ibtn" id="btn-page" title="Seite"><span data-icon="page"></span></button>
-        <button class="ibtn" id="btn-export" title="Exportieren"><span data-icon="share"></span></button>
-        <button class="ibtn" id="btn-more" title="Einstellungen"><span data-icon="more"></span></button>
-      </div>
+    <!-- Tabs mit geöffneten Notizbüchern -->
+    <header class="tabbar">
+      <button class="tab-home" id="btn-back" title="Bibliothek" aria-label="Zur Bibliothek"><span data-icon="home"></span></button>
+      <div class="tabs" id="tabs" role="tablist" aria-label="Geöffnete Dokumente"></div>
     </header>
-    <div class="toolrow">
+    <!-- Werkzeugleiste -->
+    <div class="ed-toolbar">
+      <div class="tb-group tb-left">
+        <button class="tbtn" id="btn-sidebar" title="Seitenübersicht" aria-label="Seitenübersicht"><span data-icon="sidebar"></span></button>
+        <button class="tbtn" id="btn-doc-search" title="Im Dokument suchen" aria-label="Im Dokument suchen"><span data-icon="search"></span></button>
+        <button class="tbtn" id="btn-bookmarks" title="Lesezeichen" aria-label="Lesezeichen"><span data-icon="bookmark"></span></button>
+        <input id="nb-title" class="title-input" spellcheck="false" aria-label="Titel" hidden>
+        <span id="save-status" class="save-status" hidden></span>
+      </div>
       <div class="tools" id="tools">
+        <button class="tool" data-tool="lasso" title="Lasso (L)"><span data-icon="lasso"></span></button>
         <button class="tool" data-tool="pen" title="Stift (P)"><span data-icon="pen"></span></button>
         <button class="tool" data-tool="highlighter" title="Textmarker (H)"><span data-icon="highlighter"></span></button>
         <button class="tool" data-tool="eraser" title="Radierer (E)"><span data-icon="eraser"></span></button>
-        <button class="tool" data-tool="lasso" title="Lasso (L)"><span data-icon="lasso"></span></button>
+        <button class="tool" data-tool="text" title="Textfeld (T)"><span data-icon="textbox"></span></button>
+        <button class="tool" data-tool="note" title="Haftnotiz (N)"><span data-icon="note"></span></button>
+        <button class="tool" id="btn-insert" title="Bild, PDF oder Scan einfügen"><span data-icon="image"></span></button>
         <button class="tool" data-tool="shape" title="Formen (S)"><span data-icon="shapes"></span></button>
-        <button class="tool" data-tool="text" title="Text (T)"><span data-icon="text"></span></button>
-        <button class="tool" id="btn-insert" title="Einfügen: Bild, PDF oder Scan"><span data-icon="insert"></span></button>
+        <button class="tool" data-tool="laser" title="Laserpointer (K)"><span data-icon="laser"></span></button>
+        <span class="tools-sep"></span>
+        <button class="tool" id="btn-mic" title="Sprachaufnahme"><span data-icon="mic"></span><span class="rec-time" id="rec-time" hidden></span></button>
+        <button class="tool tool-wide" id="btn-view" title="Ansicht"><span data-icon="viewMode"></span><span data-icon="chev" class="mini-chev"></span></button>
       </div>
-      <div class="options" id="options"></div>
+      <div class="tb-group tb-right">
+        <button class="tbtn" id="btn-page" title="Seite hinzufügen und Seiten verwalten" aria-label="Seite hinzufügen"><span data-icon="pagePlus"></span></button>
+        <button class="tbtn" id="btn-export" title="Teilen und exportieren" aria-label="Teilen und exportieren"><span data-icon="share"></span></button>
+        <button class="tbtn" id="btn-more" title="Mehr" aria-label="Mehr"><span data-icon="moreCircle"></span></button>
+      </div>
     </div>
     <div class="editor-body">
+      <div class="floating undo-pill">
+        <button class="ibtn" id="btn-undo" title="Rückgängig (Strg+Z)" aria-label="Rückgängig"><span data-icon="undo"></span></button>
+        <button class="ibtn" id="btn-redo" title="Wiederholen (Strg+Umschalt+Z)" aria-label="Wiederholen"><span data-icon="redo"></span></button>
+      </div>
+      <div class="toolrow" id="toolrow"><div class="options" id="options"></div></div>
       <aside id="sidebar">
         <div id="thumbs"></div>
         <button class="btn ghost small add-thumb" id="btn-add-page-side"><span data-icon="plus"></span>Seite</button>
