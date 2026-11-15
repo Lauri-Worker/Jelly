@@ -2,10 +2,12 @@
 // WICHTIG: Das Impressum enthält Platzhalter in [eckigen Klammern]. Bitte mit den echten
 // Angaben der Person ersetzen, die die Website betreibt. Die Texte sind keine Rechtsberatung.
 
-export const APP_VERSION = '1.7';
+export const APP_VERSION = '1.8';
 
-export const NEWS_VERSION = 7;
+export const NEWS_VERSION = 8;
 export const NEWS = [
+  { title: 'Zubehör', text: 'Tippe den Laserpointer nochmal an: Lineal, Zoom-Ansicht zum Schreiben in groß, Zeitmesser und Werkzeugleiste anpassen.' },
+  { title: 'Mehr Formen', text: 'Dreieck, Raute, abgerundetes Rechteck, Winkel- und Bogenpfeil – oder Formen frei zeichnen und automatisch erkennen lassen.' },
   { title: 'Tape zum Lernen', text: 'Decke Begriffe mit farbigem Tape ab und tippe darauf, um sie aufzudecken – ideal zum Abfragen.' },
   { title: 'Lasso-Werkzeug', text: 'Tippe das Lasso nochmal an: rechteckig oder freihand auswählen und festlegen, was mit ausgewählt wird.' },
   { title: 'Seiten wischen', text: 'Blättere mit dem Finger nach links und rechts durch deine Seiten – jede Seite füllt den Bildschirm. Fortlaufendes Scrollen gibt es weiter unter Ansicht.' },

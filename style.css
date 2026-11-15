@@ -1080,8 +1080,8 @@ canvas.live.laser { pointer-events: none; z-index: 2; }
 
 /* ---------- Lasso-Panel, Stiftgruppe, Linien-Stärken ---------- */
 .lasso-chev { display: none !important; }
-.ed-toolbar .tool[data-tool="lasso"].active { width: 62px; gap: 1px; }
-.ed-toolbar .tool[data-tool="lasso"].active .lasso-chev { display: inline-flex !important; }
+.ed-toolbar .tool.with-chev { width: 62px; gap: 1px; }
+.ed-toolbar .tool.with-chev .lasso-chev { display: inline-flex !important; }
 .lasso-chev .ic { width: 14px !important; height: 14px !important; stroke-width: 2.2 !important; }
 .menu.lasso-menu { width: min(400px, calc(100vw - 16px)); padding: 18px 16px 16px; background: var(--surface-2); }
 .lp-title { text-align: center; font: 700 19px/1.2 var(--font-display); letter-spacing: -.01em; margin-bottom: 18px; }
@@ -1104,3 +1104,59 @@ canvas.live.laser { pointer-events: none; z-index: 2; }
 .wbtn-line { width: 42px; }
 .wline { display: block; width: 24px; border-radius: 4px; background: currentColor; }
 .wbtn-line.active { background: var(--surface-3); color: var(--text); }
+
+/* ---------- Zubehör ---------- */
+.menu.acc-menu { width: min(380px, calc(100vw - 16px)); padding: 18px 14px 14px; background: var(--surface-2); display: block; }
+.acc-panel { display: flex; flex-direction: column; gap: 14px; }
+.acc-panel .lp-title { margin-bottom: 4px; }
+.acc-on { font-size: 12px; color: var(--ok); background: color-mix(in srgb, var(--ok) 14%, transparent); padding: 2px 8px; border-radius: 999px; }
+
+/* Haftnotiz-Farben als Quadrate, Farbauswahl */
+.swatch.sq { border-radius: 8px; width: 34px; height: 30px; }
+.swatch.sq.active::after { border-radius: 11px; }
+.menu.color-menu { min-width: 0; }
+.color-pop { display: grid; grid-template-columns: repeat(4, 32px); gap: 12px; padding: 10px; }
+.color-pop .swatch { width: 32px; height: 32px; }
+
+/* Lineal */
+.ruler { position: absolute; left: 0; top: 0; z-index: 7; transform-origin: 50% 50%; pointer-events: none; }
+.ruler-body {
+  position: absolute; inset: 0; border-radius: 10px;
+  background:
+    repeating-linear-gradient(90deg, rgba(20,22,28,.55) 0 1px, transparent 1px 10px) top left / 100% 12px no-repeat,
+    repeating-linear-gradient(90deg, rgba(20,22,28,.7) 0 1.5px, transparent 1.5px 50px) top left / 100% 22px no-repeat,
+    repeating-linear-gradient(90deg, rgba(20,22,28,.55) 0 1px, transparent 1px 10px) bottom left / 100% 12px no-repeat,
+    rgba(235, 238, 245, .7);
+  box-shadow: 0 0 0 1px rgba(0,0,0,.12), 0 8px 24px -8px rgba(0,0,0,.35);
+  -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px);
+}
+.ruler-grip, .ruler-rot, .ruler-close {
+  position: absolute; top: 50%; transform: translateY(-50%); pointer-events: auto; border: 0; touch-action: none;
+  width: 38px; height: 38px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
+  background: #fff; color: #12141b; box-shadow: 0 2px 8px rgba(0,0,0,.25); cursor: grab;
+}
+.ruler-grip { left: calc(50% - 19px); }
+.ruler-rot { right: 14px; }
+.ruler-close { left: 14px; width: 30px; height: 30px; }
+.ruler-grip .ic, .ruler-rot .ic { width: 20px; height: 20px; }
+.ruler-close .ic { width: 15px; height: 15px; }
+.ruler-angle { position: absolute; top: 50%; left: calc(50% + 30px); transform: translateY(-50%); font-size: 13px; font-weight: 700; color: #12141b; font-variant-numeric: tabular-nums; }
+
+/* Zeitmesser */
+.timer-w { right: max(16px, env(safe-area-inset-right, 0px)); top: 84px; padding: 6px 6px 6px 8px; gap: 4px; border-radius: 18px; }
+.timer-mode { border: 0; background: var(--surface-2); border-radius: 10px; padding: 6px 10px; font-size: 13px; font-weight: 600; }
+.timer-val { font: 700 22px/1 var(--font-display); font-variant-numeric: tabular-nums; min-width: 72px; text-align: center; letter-spacing: -.01em; }
+.timer-w.done { box-shadow: 0 0 0 3px var(--danger), var(--shadow); }
+.timer-w.done .timer-val { color: var(--danger); }
+@media (max-width: 1100px) { .timer-w { top: 130px; } }
+
+/* Zoom-Ansicht */
+.editor-body.zoom-open #viewer { margin-bottom: 36vh; }
+.zoom-panel {
+  position: absolute; left: 0; right: 0; bottom: 0; height: 36vh; z-index: 8;
+  background: var(--surface); border-top: 1px solid var(--line-strong); box-shadow: 0 -10px 30px -12px rgba(0,0,0,.3);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.zoom-panel canvas { position: absolute; left: 0; top: 0; width: calc(100% - 64px); height: 100%; display: block; touch-action: none; cursor: crosshair; }
+.zp-bar { position: absolute; right: 0; top: 0; bottom: 0; width: 64px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; border-left: 1px solid var(--line); }
+.zoom-rect { position: absolute; z-index: 3; border: 2px solid var(--accent); border-radius: 6px; background: rgba(52, 97, 255, .06); cursor: move; touch-action: none; }

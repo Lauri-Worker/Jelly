@@ -20,6 +20,8 @@ const HL_COLORS = ['#ffe34d', '#8be38f', '#80cbff', '#ff9ecf', '#ffb352'];
 const WIDTHS = { pen: [1.2, 2.2, 4], highlighter: [8, 14, 24], eraser: [8, 18, 36], shape: [1.2, 2.2, 4], tape: [14, 22, 34] };
 const TEXT_SIZES = [14, 20, 30];
 const SHAPES = [['line', 'Linie'], ['arrow', 'Pfeil'], ['rect', 'Rechteck'], ['ellipse', 'Ellipse']];
+const SHAPE_CONNECTORS = [['auto', 'Formen zeichnen (werden erkannt)'], ['elbow', 'Winkelpfeil'], ['curve', 'Bogenpfeil'], ['line', 'Linie'], ['arrow', 'Pfeil']];
+const SHAPE_FIGURES = [['rect', 'Rechteck'], ['ellipse', 'Kreis'], ['triangle', 'Dreieck'], ['diamond', 'Raute'], ['roundrect', 'Abgerundetes Rechteck']];
 const JSPDF_URL = 'vendor/jspdf.umd.min.js';
 const PDFJS_URL = 'vendor/pdf.min.js';
 const PDFJS_WORKER = 'vendor/pdf.worker.min.js';
@@ -85,6 +87,24 @@ const ICONS = {
   tape: '<path d="M4 15 15 4l5 5L9 20z"/><path d="m4 15 1.5 1-.5 1.5L6.5 19 8 18.5 9 20"/><path d="m15 4 1 1.5 1.5-.5.5 1.5 1.5-.5L20 9" opacity=".6"/>',
   rectSel: '<rect x="4" y="5" width="16" height="14" rx="2" stroke-dasharray="3 2.6"/>',
   lassoFree: '<path d="M6 7c3-4 11-3 12 1s-3 6-7 6-7 1-6 4 5 2 5 2" stroke-dasharray="3 2.6"/>',
+  accessories: '<rect x="3" y="3" width="7" height="7" rx="2"/><circle cx="17.5" cy="6.5" r="3.5"/><path d="M14 14h7v7h-7z"/><path d="m3 21 3.5-7 3.5 7z"/>',
+  recList: '<rect x="3" y="4" width="11" height="15" rx="2"/><path d="M6 8h5M6 11h5M6 14h3"/><rect x="16" y="7" width="4" height="8" rx="2"/><path d="M14.5 13a3.5 3.5 0 0 0 7 0M18 17v3"/>',
+  zoomWin: '<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="11" cy="11" r="3.5"/><path d="m13.5 13.5 3 3"/>',
+  ruler: '<path d="M3 16 16 3l5 5L8 21z"/><path d="m7 12 2 2M10 9l1.5 1.5M13 6l2 2M5.5 14.5l1 1"/>',
+  clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  move4: '<path d="M12 3v18M3 12h18"/><path d="m9 6 3-3 3 3M9 18l3 3 3-3M6 9l-3 3 3 3M18 9l3 3-3 3"/>',
+  rotate: '<path d="M20 12a8 8 0 1 1-2.3-5.7"/><path d="M20 4v5h-5"/>',
+  newline: '<path d="M20 5v7a3 3 0 0 1-3 3H5"/><path d="m9 11-4 4 4 4"/>',
+  sh_auto: '<rect x="3" y="3" width="11" height="11" rx="2"/><circle cx="15" cy="15" r="6"/>',
+  sh_elbow: '<path d="M5 5h9v13"/><path d="m11 15 3 3 3-3"/>',
+  sh_curve: '<path d="M5 5c8 0 9 6 9 13"/><path d="m11 15 3 3 3-3"/>',
+  sh_line: '<path d="M5 19 19 5"/>',
+  sh_arrow: '<path d="M5 19 19 5"/><path d="M10 5h9v9"/>',
+  sh_rect: '<rect x="4" y="4" width="16" height="16" rx="1" fill="currentColor"/>',
+  sh_ellipse: '<circle cx="12" cy="12" r="8.5" fill="currentColor"/>',
+  sh_triangle: '<path d="M12 3.5 21 20H3z" fill="currentColor"/>',
+  sh_diamond: '<path d="M12 2.5 21.5 12 12 21.5 2.5 12z" fill="currentColor"/>',
+  sh_roundrect: '<rect x="3" y="6" width="18" height="12" rx="5" fill="currentColor"/>',
   share: '<path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><path d="m16 6-4-4-4 4"/><path d="M12 2v13"/>',
   page: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/>',
   file: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 15h6"/>',
@@ -206,7 +226,7 @@ const DEFAULT_PREFS = {
     eraser: { width: 18 },
     shape: { color: PEN_COLORS[0], width: 2.2, kind: 'rect' },
     text: { color: PEN_COLORS[0], size: 20, font: 'sans', bold: false, italic: false },
-    note: { color: '#fff3a3', size: 16 },
+    note: { color: '#fff08a', size: 16 },
     laser: { color: '#ff3b30' },
     tape: { color: TAPE_COLORS[0], width: 22 },
     lasso: { mode: 'free', inc: { ink: true, images: true, shapes: true, arrows: true, text: true, tape: true, notes: true } },
@@ -384,7 +404,7 @@ const FONTS = {
   mono: ['Schreibmaschine', '"SF Mono", Menlo, Consolas, "Courier New", monospace'],
   hand: ['Handschrift', '"Noteworthy", "Marker Felt", "Comic Sans MS", "Segoe Print", cursive'],
 };
-const NOTE_COLORS = ['#fff3a3', '#ffd1e3', '#c9f1d0', '#cfe6ff', '#ffd9b3', '#e5d4ff'];
+const NOTE_COLORS = ['#ffb3b3', '#ffcf9e', '#fff08a', '#b9f0a5', '#a8ece6', '#cfe2ff', '#e3d4ff', '#ffc8e6', '#e2e2e2', '#ffffff'];
 const fontCss = (it) => `${it.italic ? 'italic ' : ''}${it.bold ? '700 ' : ''}${it.size}px ${(FONTS[it.font] || FONTS.sans)[1]}`;
 
 function tracePath(ctx, P) {
@@ -651,6 +671,35 @@ function shapePoints(kind, a, b) {
       return [p(x0, y0), p(x1, y1), h1, p(x1, y1), h2];
     }
     case 'rect': return [p(x0, y0), p(x1, y0), p(x1, y1), p(x0, y1), p(x0, y0)];
+    case 'triangle': return [p((x0 + x1) / 2, y0), p(x1, y1), p(x0, y1), p((x0 + x1) / 2, y0)];
+    case 'diamond': {
+      const mx = (x0 + x1) / 2, my = (y0 + y1) / 2;
+      return [p(mx, y0), p(x1, my), p(mx, y1), p(x0, my), p(mx, y0)];
+    }
+    case 'roundrect': {
+      const l = Math.min(x0, x1), r = Math.max(x0, x1), t = Math.min(y0, y1), bt = Math.max(y0, y1);
+      const rad = Math.min(18, (r - l) / 4, (bt - t) / 4);
+      const pts = [];
+      const arc = (cx, cy, a0) => { for (let i = 0; i <= 6; i++) { const a = a0 + (i / 6) * Math.PI / 2; pts.push(p(cx + rad * Math.cos(a), cy + rad * Math.sin(a))); } };
+      arc(r - rad, t + rad, -Math.PI / 2); arc(r - rad, bt - rad, 0); arc(l + rad, bt - rad, Math.PI / 2); arc(l + rad, t + rad, Math.PI);
+      pts.push(pts[0]);
+      return pts;
+    }
+    case 'elbow':
+    case 'curve': {
+      let pts;
+      if (kind === 'elbow') pts = [p(x0, y0), p(x1, y0), p(x1, y1)];
+      else {
+        pts = [];
+        for (let i = 0; i <= 24; i++) { const t = i / 24; pts.push(p((1 - t) * (1 - t) * x0 + 2 * (1 - t) * t * x1 + t * t * x1, (1 - t) * (1 - t) * y0 + 2 * (1 - t) * t * y0 + t * t * y1)); }
+      }
+      const pa = pts[pts.length - 2], pb = pts[pts.length - 1];
+      const ang = Math.atan2(pb[1] - pa[1], pb[0] - pa[0]);
+      const len = 16;
+      const h1 = p(pb[0] - len * Math.cos(ang - 0.45), pb[1] - len * Math.sin(ang - 0.45));
+      const h2 = p(pb[0] - len * Math.cos(ang + 0.45), pb[1] - len * Math.sin(ang + 0.45));
+      return [...pts, h1, pb, h2];
+    }
     case 'ellipse': {
       const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2, rx = Math.abs(x1 - x0) / 2, ry = Math.abs(y1 - y0) / 2;
       const pts = [];
@@ -774,6 +823,7 @@ async function leaveNotebook() {
   closeTextEditor();
   clearSelection();
   stopLaser();
+  if (zoomWin) closeZoomPanel();
   if (rec) await stopRecording();
   tabView.set(state.nb.id, { zoom: state.zoom, fit: state.fit, top: viewer.scrollTop, left: viewer.scrollLeft });
   await pruneAssets().catch(console.error);
@@ -1436,6 +1486,7 @@ const io = new IntersectionObserver((entries) => {
 
 function buildPages() {
   stopLaser();
+  if (zoomWin && !findPage(zoomWin.pageId)) closeZoomPanel();
   io.disconnect();
   views.clear();
   pagesEl.innerHTML = '';
@@ -1475,6 +1526,7 @@ function layout() {
   } else pagesEl.style.gap = '';
   if (editing) positionTextEditor();
   if (state.selection) renderSelection();
+  if (zoomWin) positionZoomRect();
 }
 
 function renderView(v) {
@@ -1497,7 +1549,9 @@ function scheduleRender(v) {
 function scheduleLive() { liveDirty = true; scheduleRender(); }
 function flushRender() {
   rafId = 0;
+  const zpDirty = zoomWin && (liveDirty || [...dirty].some((v) => v.page.id === zoomWin.pageId));
   for (const v of dirty) if (v.visible && views.get(v.page.id) === v) renderView(v);
+  if (zpDirty) renderZoomPanel();
   dirty.clear();
   if (liveDirty) drawLive();
 }
@@ -1767,6 +1821,8 @@ function setTool(t) {
   closeTextEditor();
   state.tool = t;
   for (const b of document.querySelectorAll('.tool[data-tool]')) b.classList.toggle('active', b.dataset.tool === t || (t === 'tape' && b.dataset.tool === 'pen'));
+  $('.tool[data-tool="laser"]').classList.toggle('with-chev', t === 'laser');
+  $('.tool[data-tool="lasso"]').classList.toggle('with-chev', t === 'lasso');
   for (const v of views.values()) v.wrap.className = 'page t-' + t;
   renderOptions();
   savePrefs();
@@ -1792,7 +1848,7 @@ function renderOptions() {
   const t = state.tool, cfg = state.tools[t];
   const o = $('#options');
   let html = '';
-  if (['pen', 'highlighter', 'tape', 'shape'].includes(t)) {
+  if (['pen', 'highlighter', 'tape'].includes(t)) {
     const pc = state.tools.pen;
     const cur = PEN_TYPES.find(([k]) => k === pc.pen) || PEN_TYPES[0];
     html += '<div class="tool-group">';
@@ -1812,8 +1868,10 @@ function renderOptions() {
     html += `<button class="opt-drop" data-act="lassopanel" title="Lasso-Werkzeug">${icon(state.tools.lasso.mode === 'rect' ? 'rectSel' : 'lassoFree')}<span>${state.tools.lasso.mode === 'rect' ? 'Rechteckig' : 'Freihand'}</span>${icon('chev')}</button>`;
   }
   if (t === 'shape') {
-    html += SHAPES.map(([k, n]) => `<button class="wbtn ${cfg.kind === k ? 'active' : ''}" data-shape="${k}" title="${n}">${icon(k)}</button>`).join('');
-    html += '<span class="opt-sep"></span>';
+    const sb = ([k, n]) => `<button class="wbtn ${cfg.kind === k ? 'active' : ''}" data-shape="${k}" title="${n}">${icon('sh_' + k)}</button>`;
+    html += SHAPE_CONNECTORS.map(sb).join('') + '<span class="opt-sep"></span>' + SHAPE_FIGURES.map(sb).join('') + '<span class="opt-sep"></span>';
+    html += `<button class="opt-drop" data-act="shapewidth" title="Strichstärke"><span class="wline" style="height:${cfg.width > 3 ? 6 : cfg.width > 1.8 ? 4 : 2}px;width:22px"></span>${icon('chev')}</button>`;
+    html += `<button class="opt-drop" data-act="shapecolor" title="Farbe"><span class="swatch" style="--c:${cfg.color};width:24px;height:24px"></span>${icon('chev')}</button>`;
   }
   if (t === 'text') {
     const f = FONTS[cfg.font] || FONTS.sans;
@@ -1823,15 +1881,12 @@ function renderOptions() {
     html += `<button class="wbtn ${cfg.italic ? 'active' : ''}" data-act="italic" title="Kursiv"><i style="font-size:17px;font-family:Georgia,serif">I</i></button>`;
     html += '<span class="opt-sep"></span>';
   }
-  if (t === 'note') {
-    html += [[14, 'Klein'], [16, 'Mittel'], [20, 'Groß']].map(([sz, n], i) => `<button class="wbtn ${cfg.size === sz ? 'active' : ''}" data-size="${sz}" title="Schrift ${n}"><span style="font-size:${[12, 15, 19][i]}px;font-weight:600">A</span></button>`).join('');
-    html += '<span class="opt-sep"></span>';
-  }
-  if (WIDTHS[t] && t !== 'eraser') { html += widthsHtml(t, cfg); }
-  if (cfg && 'color' in cfg) {
+
+  if (WIDTHS[t] && t !== 'eraser' && t !== 'shape') { html += widthsHtml(t, cfg); }
+  if (cfg && 'color' in cfg && t !== 'shape') {
     const colors = paletteFor(t);
-    html += colors.map((c) => `<button class="swatch ${c === cfg.color ? 'active' : ''}" style="--c:${c}" data-color="${c}" title="${c}"></button>`).join('');
-    if (t !== 'laser') {
+    html += colors.map((c, i) => `${t === 'note' && i === colors.length - 1 ? '<span class="opt-sep"></span>' : ''}<button class="swatch ${t === 'note' ? 'sq' : ''} ${c === cfg.color ? 'active' : ''}" style="--c:${c}" data-color="${c}" title="${c}"></button>`).join('');
+    if (t !== 'laser' && t !== 'note') {
       const custom = !colors.includes(cfg.color);
       html += `<label class="swatch custom ${custom ? 'active' : ''}" title="Eigene Farbe" ${custom ? `style="background:${cfg.color}"` : ''}><input type="color" value="${cfg.color}"></label>`;
     }
@@ -1848,7 +1903,7 @@ function renderOptions() {
   }
   if (t === 'text') html += '<span class="opt-hint">Tippe auf die Seite, um zu schreiben</span>';
   if (t === 'note') html += '<span class="opt-hint">Tippe auf die Seite für eine Haftnotiz</span>';
-  if (t === 'laser') html += '<span class="opt-hint">Zeigen ohne zu schreiben – die Spur verblasst</span>';
+  if (t === 'laser') html += `<button class="opt-drop" data-act="accessories" title="Zubehör">${icon('accessories')}<span>Zubehör</span>${icon('chev')}</button><span class="opt-hint">Zeigen ohne zu schreiben – die Spur verblasst</span>`;
   if (t === 'tape') html += '<span class="opt-hint">Ziehe Tape über Text – antippen deckt auf</span>';
   if (t === 'eraser') html += '<span class="opt-hint">Radiert ganze Striche</span>';
   if (t === 'lasso') html += '<span class="opt-hint">Umkreise Inhalte zum Verschieben, Skalieren oder Kopieren</span>';
@@ -1873,6 +1928,20 @@ $('#options').addEventListener('click', (e) => {
   const done = () => { if (t === 'text') applyTextCfgToEditing(); renderOptions(); savePrefs(); };
   if (b.dataset.switch) { setTool(b.dataset.switch); return; }
   if (b.dataset.act === 'lassopanel') { openLassoPanel(b); return; }
+  if (b.dataset.act === 'accessories') { openAccessories(b); return; }
+  if (b.dataset.act === 'shapewidth') {
+    openMenu(b, WIDTHS.shape.map((w, i) => ({ label: ['Dünn', 'Mittel', 'Dick'][i], check: cfg.width === w, action: () => { cfg.width = w; renderOptions(); savePrefs(); } })));
+    return;
+  }
+  if (b.dataset.act === 'shapecolor') {
+    const el = document.createElement('div');
+    el.className = 'color-pop';
+    el.innerHTML = PEN_COLORS.map((c) => `<button class="swatch ${c === cfg.color ? 'active' : ''}" style="--c:${c}" data-c="${c}"></button>`).join('') + `<label class="swatch custom"><input type="color" value="${cfg.color}"></label>`;
+    el.addEventListener('click', (ev) => { const sw = ev.target.closest('[data-c]'); if (!sw) return; cfg.color = sw.dataset.c; closeMenu(); renderOptions(); savePrefs(); });
+    el.querySelector('input').addEventListener('input', (ev) => { cfg.color = ev.target.value; renderOptions(); savePrefs(); });
+    openMenu(b, el, 'color-menu');
+    return;
+  }
   if (b.dataset.color) cfg.color = b.dataset.color;
   else if (b.dataset.width) cfg.width = +b.dataset.width;
   else if (b.dataset.size) cfg.size = +b.dataset.size;
@@ -1902,6 +1971,7 @@ $('#tools').addEventListener('click', (e) => {
   const b = e.target.closest('.tool[data-tool]');
   if (!b) return;
   if (b.dataset.tool === 'lasso' && state.tool === 'lasso') { openLassoPanel(b); return; }
+  if (b.dataset.tool === 'laser' && state.tool === 'laser') { openAccessories(b); return; }
   setTool(b.dataset.tool);
 });
 /** Panel „Lasso-Werkzeug“: Lasso-Art und was in die Auswahl kommt. */
@@ -1944,6 +2014,7 @@ const touches = new Map(); // aktive Finger
 let pinch = null;
 
 function getPt(e, v) {
+  if (act?.zp) return zoomPt(e);
   const r = v.wrap.getBoundingClientRect();
   return [(e.clientX - r.left) / state.zoom, (e.clientY - r.top) / state.zoom];
 }
@@ -1991,7 +2062,14 @@ viewer.addEventListener('pointerdown', (e) => {
     case 'highlighter': return startStroke(v, e, tool);
     case 'eraser': return startErase(v, pt, e);
     case 'lasso': return startLasso(v, pt, e);
-    case 'shape': return startShape(v, pt, e);
+    case 'shape':
+      if (state.tools.shape.kind === 'auto') {
+        startStroke(v, e, 'pen');
+        Object.assign(act.s, { color: state.tools.shape.color, width: state.tools.shape.width, pen: undefined });
+        act.autoShape = true;
+        return;
+      }
+      return startShape(v, pt, e);
     case 'text': act = { type: 'text', id: e.pointerId, v, pt }; return;
     case 'note': act = { type: 'note', id: e.pointerId, v, pt }; return;
     case 'laser': return startLaser(v, e);
@@ -2076,7 +2154,7 @@ function endPointer(e) {
         if (toggleTapeAt(a.v, p0[0], p0[1])) break;
       }
       if (a.type === 'shape' && a.s.points.length < 2) break;
-      if (a.type === 'stroke' && a.s.tool === 'pen' && state.tools.pen.shapeRec) {
+      if (a.type === 'stroke' && a.s.tool === 'pen' && (state.tools.pen.shapeRec || a.autoShape)) {
         const rec = recognizeShape(a.s.points);
         if (rec) Object.assign(a.s, { tool: 'shape', straight: true, kind: rec.kind, points: rec.points, pen: undefined });
       }
@@ -2168,9 +2246,24 @@ function startStroke(v, e, tool) {
   act = { type: 'stroke', id: e.pointerId, v, s: { id: uid(), tool, color: cfg.color, width: cfg.width, points: [] } };
   if (tool === 'pen' && cfg.pen && cfg.pen !== 'fountain') act.s.pen = cfg.pen;
   attachLive(v);
+  const edge = !act.zp && rulerEdgeNear(e.clientX, e.clientY);
+  if (edge) {
+    act.ruler = edge;
+    act.s.straight = tool === 'pen';
+    const p0 = projectOnRuler(edge, e.clientX, e.clientY);
+    act.rulerStart = p0;
+  }
   addStrokePoints(e);
 }
 function addStrokePoints(e) {
+  if (act.ruler) {
+    // Am Lineal: gerade Linie vom Startpunkt zum projizierten aktuellen Punkt
+    const r = act.v.wrap.getBoundingClientRect(), z = state.zoom;
+    const a = act.rulerStart, b = projectOnRuler(act.ruler, e.clientX, e.clientY);
+    act.s.points = [[r1((a[0] - r.left) / z), r1((a[1] - r.top) / z), 0.5], [r1((b[0] - r.left) / z), r1((b[1] - r.top) / z), 0.5]];
+    scheduleLive();
+    return;
+  }
   const evs = (e.getCoalescedEvents && e.getCoalescedEvents()) || [];
   const list = evs.length ? evs : [e];
   const P = act.s.points;
@@ -2222,7 +2315,7 @@ function recognizeShape(P) {
 const laserCv = document.createElement('canvas');
 laserCv.className = 'live laser';
 let laser = null; // { v, trails: [{ pts: [[x, y, t]], color }], raf }
-const LASER_FADE = 900;
+const LASER_FADE = 650;
 function startLaser(v, e) {
   if (!laser || laser.v !== v) {
     stopLaser();
@@ -2242,8 +2335,22 @@ function addLaserPoints(e) {
   const now = performance.now();
   for (const ev of evs.length ? evs : [e]) {
     const [x, y] = getPt(ev, act.v);
-    act.tr.pts.push([x, y, now]);
+    const L = act.tr.pts[act.tr.pts.length - 1];
+    if (!L || Math.hypot(x - L[0], y - L[1]) > 0.4) act.tr.pts.push([x, y, now]);
   }
+  // Vorausberechnete Punkte machen die Spitze ohne Verzögerung sichtbar
+  const pred = e.getPredictedEvents ? e.getPredictedEvents() : [];
+  act.tr.pred = pred.length ? getPt(pred[pred.length - 1], act.v) : null;
+}
+/** Zeichnet Punkte als weiche Kurve (Mittelpunkte als Stützstellen). */
+function smoothPath(ctx, pts) {
+  ctx.beginPath();
+  ctx.moveTo(pts[0][0], pts[0][1]);
+  for (let i = 1; i < pts.length - 1; i++) {
+    ctx.quadraticCurveTo(pts[i][0], pts[i][1], (pts[i][0] + pts[i + 1][0]) / 2, (pts[i][1] + pts[i + 1][1]) / 2);
+  }
+  const L = pts[pts.length - 1];
+  ctx.lineTo(L[0], L[1]);
 }
 function drawLaser() {
   if (!laser) return;
@@ -2253,35 +2360,51 @@ function drawLaser() {
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.clearRect(0, 0, laserCv.width, laserCv.height);
   const page = laser.v.page;
-  ctx.setTransform(laserCv.width / page.w, 0, 0, laserCv.height / page.h, 0, 0);
+  const k = laserCv.width / page.w;
+  ctx.setTransform(k, 0, 0, laserCv.height / page.h, 0, 0);
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
+  const BANDS = 8;
   for (const tr of laser.trails) {
     const active = act && act.tr === tr;
-    tr.pts = tr.pts.filter((p) => now - p[2] < LASER_FADE || (active && p === tr.pts[tr.pts.length - 1]));
-    for (let i = 1; i < tr.pts.length; i++) {
-      const a = tr.pts[i - 1], b = tr.pts[i];
-      const alpha = Math.max(0, 1 - (now - b[2]) / LASER_FADE);
-      ctx.globalAlpha = alpha;
-      ctx.strokeStyle = tr.color;
-      ctx.shadowColor = tr.color;
-      ctx.shadowBlur = 14;
-      ctx.lineWidth = 5;
-      ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke();
-      ctx.shadowBlur = 0;
-      ctx.strokeStyle = '#fff';
-      ctx.lineWidth = 1.6;
-      ctx.stroke();
+    tr.pts = tr.pts.filter((p) => now - p[2] < LASER_FADE);
+    const pts = active && tr.pred ? [...tr.pts, [tr.pred[0], tr.pred[1], now]] : tr.pts;
+    if (pts.length > 1) {
+      // Spur in Abschnitte teilen: ältere Teile blasser und dünner
+      const n = pts.length;
+      for (let bnd = 0; bnd < BANDS; bnd++) {
+        const i0 = Math.floor((bnd * (n - 1)) / BANDS), i1 = Math.floor(((bnd + 1) * (n - 1)) / BANDS) + 1;
+        const seg = pts.slice(i0, i1 + 1);
+        if (seg.length < 2) continue;
+        const age = (now - seg[seg.length - 1][2]) / LASER_FADE;
+        const f = Math.max(0, 1 - age) * ((bnd + 1) / BANDS) ** 0.6;
+        if (f <= 0.02) continue;
+        smoothPath(ctx, seg);
+        ctx.globalAlpha = 0.25 * f;
+        ctx.strokeStyle = tr.color;
+        ctx.lineWidth = 12 / Math.max(0.6, k / 2);
+        ctx.stroke();
+        ctx.globalAlpha = 0.95 * f;
+        ctx.lineWidth = 4.5 / Math.max(0.6, k / 2);
+        ctx.stroke();
+        ctx.globalAlpha = f;
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 1.6 / Math.max(0.6, k / 2);
+        ctx.stroke();
+      }
     }
-    const last = tr.pts[tr.pts.length - 1];
-    if (active && last) {
-      ctx.globalAlpha = 1;
+    const tip = pts[pts.length - 1];
+    if (active && tip) {
+      ctx.globalAlpha = 0.3;
       ctx.fillStyle = tr.color;
-      ctx.shadowColor = tr.color; ctx.shadowBlur = 18;
-      ctx.beginPath(); ctx.arc(last[0], last[1], 6, 0, Math.PI * 2); ctx.fill();
-      ctx.shadowBlur = 0;
+      ctx.beginPath(); ctx.arc(tip[0], tip[1], 11 / Math.max(0.6, k / 2), 0, Math.PI * 2); ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.beginPath(); ctx.arc(tip[0], tip[1], 5 / Math.max(0.6, k / 2), 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.beginPath(); ctx.arc(tip[0], tip[1], 2 / Math.max(0.6, k / 2), 0, Math.PI * 2); ctx.fill();
     }
   }
+  ctx.globalAlpha = 1;
   laser.trails = laser.trails.filter((tr) => tr.pts.length || (act && act.tr === tr));
   if (laser.trails.length) laser.raf = requestAnimationFrame(drawLaser);
   else stopLaser();
@@ -2342,7 +2465,7 @@ function startLasso(v, pt, e) {
   act = { type: 'lasso', id: e.pointerId, v, poly: [pt], start: pt, rect: state.tools.lasso.mode === 'rect' };
   attachLive(v);
 }
-const strokeCat = (s) => (s.tool === 'tape' ? 'tape' : s.tool === 'shape' ? (s.kind === 'arrow' ? 'arrows' : 'shapes') : 'ink');
+const strokeCat = (s) => (s.tool === 'tape' ? 'tape' : s.tool === 'shape' ? (['arrow', 'elbow', 'curve'].includes(s.kind) ? 'arrows' : 'shapes') : 'ink');
 const itemCat = (it) => (it.type === 'image' ? 'images' : it.type === 'note' ? 'notes' : 'text');
 function finishLasso(a) {
   const page = a.v.page;
@@ -3363,8 +3486,7 @@ async function stopRecording() {
   toast(`Aufnahme gespeichert (${fmtDur(Date.now() - r.start)})`);
 }
 let player = null;
-$('#btn-mic').onclick = (e) => {
-  if (rec) { stopRecording(); return; }
+function showRecordings(anchor) {
   const list = state.nb.recordings || [];
   const el = document.createElement('div');
   el.className = 'rec-list';
@@ -3395,7 +3517,11 @@ $('#btn-mic').onclick = (e) => {
       toast('Aufnahme gelöscht');
     }
   });
-  openMenu(e.currentTarget, el, 'rec-menu');
+  openMenu(anchor, el, 'rec-menu');
+}
+$('#btn-mic').onclick = (e) => {
+  if (rec) { stopRecording(); return; }
+  showRecordings(e.currentTarget);
 };
 
 /* Ansicht */
@@ -3419,6 +3545,306 @@ $('#btn-view').onclick = (e) => openMenu(e.currentTarget, [
   { label: 'Papier und Seite …', icon: 'grid', action: () => pageMenu($('#btn-page')) },
 ]);
 renderTabs();
+
+/* =====================================================================
+   Zubehör: Lineal, Zoom-Ansicht, Zeitmesser, Werkzeugleiste anpassen
+   ===================================================================== */
+function openAccessories(anchor) {
+  const el = document.createElement('div');
+  el.className = 'acc-panel';
+  el.innerHTML = `
+    <div class="lp-title">Zubehör</div>
+    <div class="acct-group">
+      <button class="acct-item" data-acc="rec" type="button">${icon('recList')}<span>Aufnahmen anzeigen</span></button>
+      <button class="acct-item" data-acc="zoom" type="button">${icon('zoomWin')}<span>Zoom-Ansicht</span>${zoomWin ? '<b class="acc-on">An</b>' : ''}</button>
+      <button class="acct-item" data-acc="ruler" type="button">${icon('ruler')}<span>Lineal</span>${ruler.on ? '<b class="acc-on">An</b>' : ''}</button>
+      <button class="acct-item" data-acc="timer" type="button">${icon('clock')}<span>Zeitmesser</span>${$('#timer').hidden ? '' : '<b class="acc-on">An</b>'}</button>
+    </div>
+    <div class="acct-group"><button class="acct-item" data-acc="toolbar" type="button"><span>Werkzeugleiste anpassen</span></button></div>`;
+  el.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-acc]');
+    if (!b) return;
+    const a = b.dataset.acc;
+    closeMenu();
+    if (a === 'rec') showRecordings($('#btn-mic'));
+    else if (a === 'zoom') zoomWin ? closeZoomPanel() : openZoomPanel();
+    else if (a === 'ruler') toggleRuler();
+    else if (a === 'timer') { $('#timer').hidden = !$('#timer').hidden; }
+    else if (a === 'toolbar') customizeToolbar();
+  });
+  openMenu(anchor, el, 'acc-menu');
+}
+
+/* Werkzeugleiste anpassen */
+const TB_ITEMS = [['lasso', 'Lasso'], ['pen', 'Stift'], ['highlighter', 'Textmarker'], ['eraser', 'Radierer'], ['text', 'Textfeld'], ['note', 'Haftnotiz'], ['image', 'Bild, PDF, Scan'], ['shape', 'Formen'], ['laser', 'Laserpointer'], ['mic', 'Sprachaufnahme'], ['view', 'Ansicht']];
+function getTbHidden() { try { return JSON.parse(localStorage.getItem('jelly.tbHidden') || '[]'); } catch { return []; } }
+function applyToolbar() {
+  const hidden = new Set(getTbHidden());
+  for (const [k] of TB_ITEMS) {
+    const el = document.querySelector(`.tool[data-tool="${k}"], .tool[data-tb="${k}"]`);
+    if (el) el.hidden = hidden.has(k);
+  }
+}
+function customizeToolbar() {
+  const el = document.createElement('div');
+  el.className = 'settings';
+  const hidden = new Set(getTbHidden());
+  for (const [k, n] of TB_ITEMS) {
+    el.appendChild(settingSwitch(n, '', !hidden.has(k), (on) => {
+      const h = new Set(getTbHidden());
+      on ? h.delete(k) : h.add(k);
+      try { localStorage.setItem('jelly.tbHidden', JSON.stringify([...h])); } catch { /* */ }
+      applyToolbar();
+    }));
+  }
+  showInfo('Werkzeugleiste anpassen', el);
+}
+applyToolbar();
+
+/* Zeitmesser: Stoppuhr oder Countdown */
+const timer = { mode: 0, running: false, start: 0, acc: 0, iv: 0 }; // mode 0 = Stoppuhr, sonst Minuten
+const TIMER_MODES = [0, 5, 10, 15, 25, 45];
+function timerElapsed() { return timer.acc + (timer.running ? Date.now() - timer.start : 0); }
+function renderTimer() {
+  const ms = timerElapsed();
+  const show = timer.mode ? Math.max(0, timer.mode * 60000 - ms) : ms;
+  const sec = Math.ceil(show / 1000 - (timer.mode ? 0 : 0.999));
+  const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), ss = sec % 60;
+  $('#timer-val').textContent = (h ? h + ':' + String(m).padStart(2, '0') : m) + ':' + String(ss).padStart(2, '0');
+  $('#timer-start').innerHTML = icon(timer.running ? 'pause' : 'play');
+  $('#timer-mode').textContent = timer.mode ? `${timer.mode} min` : 'Stoppuhr';
+  $('#timer').classList.toggle('done', !!timer.mode && show <= 0);
+  if (timer.mode && show <= 0 && timer.running) {
+    timer.running = false;
+    timer.acc = timer.mode * 60000;
+    clearInterval(timer.iv);
+    beep();
+    toast('Die Zeit ist um!', 4000);
+    renderTimer();
+  }
+}
+function beep() {
+  try {
+    const ac = new (window.AudioContext || window.webkitAudioContext)();
+    [0, 0.35, 0.7].forEach((t) => {
+      const o = ac.createOscillator(), g = ac.createGain();
+      o.frequency.value = 880; o.connect(g); g.connect(ac.destination);
+      g.gain.setValueAtTime(0.0001, ac.currentTime + t);
+      g.gain.exponentialRampToValueAtTime(0.3, ac.currentTime + t + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + t + 0.28);
+      o.start(ac.currentTime + t); o.stop(ac.currentTime + t + 0.3);
+    });
+    navigator.vibrate?.(300);
+  } catch { /* */ }
+}
+$('#timer-start').onclick = () => {
+  if (timer.running) { timer.acc = timerElapsed(); timer.running = false; clearInterval(timer.iv); }
+  else {
+    if (timer.mode && timerElapsed() >= timer.mode * 60000) timer.acc = 0;
+    timer.start = Date.now(); timer.running = true; timer.iv = setInterval(renderTimer, 250);
+  }
+  renderTimer();
+};
+$('#timer-reset').onclick = () => { timer.running = false; timer.acc = 0; clearInterval(timer.iv); renderTimer(); };
+$('#timer-close').onclick = () => { $('#timer').hidden = true; };
+$('#timer-mode').onclick = (e) => openMenu(e.currentTarget, TIMER_MODES.map((m) => ({
+  label: m ? `Countdown ${m} Minuten` : 'Stoppuhr', check: timer.mode === m,
+  action: () => { timer.mode = m; timer.running = false; timer.acc = 0; clearInterval(timer.iv); renderTimer(); },
+})));
+renderTimer();
+
+/* Lineal: verschieben, drehen; der Stift zieht am Rand gerade Linien */
+const ruler = { on: false, x: 0, y: 0, angle: 0, len: 620, h: 74 };
+function toggleRuler() {
+  ruler.on = !ruler.on;
+  if (ruler.on) {
+    const r = viewer.getBoundingClientRect(), eb = $('.editor-body').getBoundingClientRect();
+    ruler.len = Math.min(680, r.width * 0.75);
+    ruler.x = r.left - eb.left + r.width / 2;
+    ruler.y = r.top - eb.top + r.height * 0.55;
+    ruler.angle = 0;
+  }
+  $('#ruler').hidden = !ruler.on;
+  positionRuler();
+}
+function positionRuler() {
+  const el = $('#ruler');
+  Object.assign(el.style, { width: ruler.len + 'px', height: ruler.h + 'px', transform: `translate(${ruler.x - ruler.len / 2}px, ${ruler.y - ruler.h / 2}px) rotate(${ruler.angle}deg)` });
+  $('#ruler-angle').textContent = `${Math.round(((ruler.angle % 360) + 360) % 360)}°`;
+}
+/** Oberkante des Lineals in Bildschirmkoordinaten. */
+function rulerEdge() {
+  const eb = $('.editor-body').getBoundingClientRect();
+  const a = ruler.angle * Math.PI / 180, d = [Math.cos(a), Math.sin(a)], nrm = [-d[1], d[0]];
+  const c = [eb.left + ruler.x, eb.top + ruler.y];
+  const p0 = [c[0] - nrm[0] * ruler.h / 2, c[1] - nrm[1] * ruler.h / 2];
+  const p1 = [c[0] + nrm[0] * ruler.h / 2, c[1] + nrm[1] * ruler.h / 2];
+  return { c, d, nrm, edges: [p0, p1] };
+}
+function rulerEdgeNear(x, y) {
+  if (!ruler.on) return null;
+  const R = rulerEdge();
+  for (const [i, p] of R.edges.entries()) {
+    const vx = x - p[0], vy = y - p[1];
+    const along = vx * R.d[0] + vy * R.d[1], dist = vx * R.nrm[0] + vy * R.nrm[1];
+    // Linie liegt knapp außerhalb der Kante (Richtung weg vom Lineal)
+    const sign = i === 0 ? -1 : 1, off = 3;
+    if (Math.abs(along) <= ruler.len / 2 + 10 && Math.abs(dist) < 26) return { p: [p[0] + R.nrm[0] * sign * off, p[1] + R.nrm[1] * sign * off], d: R.d };
+  }
+  return null;
+}
+function projectOnRuler(edge, x, y) {
+  const t = (x - edge.p[0]) * edge.d[0] + (y - edge.p[1]) * edge.d[1];
+  return [edge.p[0] + edge.d[0] * t, edge.p[1] + edge.d[1] * t];
+}
+function dragOn(el, onMove) {
+  el.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    el.setPointerCapture(e.pointerId);
+    let lx = e.clientX, ly = e.clientY;
+    const mv = (ev) => { onMove(ev, ev.clientX - lx, ev.clientY - ly); lx = ev.clientX; ly = ev.clientY; };
+    const up = () => { el.removeEventListener('pointermove', mv); el.removeEventListener('pointerup', up); el.removeEventListener('pointercancel', up); };
+    el.addEventListener('pointermove', mv);
+    el.addEventListener('pointerup', up);
+    el.addEventListener('pointercancel', up);
+  });
+}
+dragOn($('.ruler-grip'), (e, dx, dy) => { ruler.x += dx; ruler.y += dy; positionRuler(); });
+dragOn($('.ruler-rot'), (e) => {
+  const eb = $('.editor-body').getBoundingClientRect();
+  let a = Math.atan2(e.clientY - (eb.top + ruler.y), e.clientX - (eb.left + ruler.x)) * 180 / Math.PI;
+  for (const snapA of [0, 45, 90, 135, 180, -45, -90, -135, -180]) if (Math.abs(a - snapA) < 3) a = snapA;
+  ruler.angle = a;
+  positionRuler();
+});
+$('.ruler-close').onclick = () => toggleRuler();
+
+/* Zoom-Ansicht: vergrößertes Schreibfeld unten */
+let zoomWin = null; // { pageId, x, y, w, h }
+const zpCanvas = $('#zoom-canvas');
+function openZoomPanel() {
+  const page = currentPage();
+  $('#zoom-panel').hidden = false;
+  $('.editor-body').classList.add('zoom-open');
+  const r = zpCanvas.getBoundingClientRect();
+  const w = page.w * 0.62;
+  zoomWin = { pageId: page.id, x: page.w * 0.08, y: page.h * 0.12, w, h: w * (r.height / Math.max(1, r.width)) };
+  if (isHorizontal()) { fitWidth(); scrollToPage(state.cur); }
+  positionZoomRect();
+  renderZoomPanel();
+}
+function closeZoomPanel() {
+  zoomWin = null;
+  $('#zoom-panel').hidden = true;
+  $('.editor-body').classList.remove('zoom-open');
+  document.querySelector('.zoom-rect')?.remove();
+  if (state.nb && isHorizontal()) { fitWidth(); scrollToPage(state.cur); }
+}
+function clampZoomWin() {
+  const page = findPage(zoomWin.pageId);
+  zoomWin.x = clamp(zoomWin.x, 0, page.w - zoomWin.w);
+  zoomWin.y = clamp(zoomWin.y, 0, page.h - zoomWin.h);
+}
+function positionZoomRect() {
+  if (!zoomWin) return;
+  const v = views.get(zoomWin.pageId);
+  if (!v) return;
+  let el = v.wrap.querySelector('.zoom-rect');
+  if (!el) {
+    document.querySelector('.zoom-rect')?.remove();
+    el = document.createElement('div');
+    el.className = 'zoom-rect';
+    v.wrap.appendChild(el);
+    dragOn(el, (e, dx, dy) => { zoomWin.x += dx / state.zoom; zoomWin.y += dy / state.zoom; clampZoomWin(); positionZoomRect(); renderZoomPanel(); });
+  }
+  const z = state.zoom;
+  Object.assign(el.style, { left: zoomWin.x * z + 'px', top: zoomWin.y * z + 'px', width: zoomWin.w * z + 'px', height: zoomWin.h * z + 'px' });
+}
+function renderZoomPanel() {
+  if (!zoomWin) return;
+  const page = findPage(zoomWin.pageId);
+  if (!page) return;
+  const r = zpCanvas.getBoundingClientRect();
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  const W = Math.round(r.width * dpr), H = Math.round(r.height * dpr);
+  if (zpCanvas.width !== W || zpCanvas.height !== H) { zpCanvas.width = W; zpCanvas.height = H; }
+  zoomWin.h = zoomWin.w * (H / Math.max(1, W));
+  const k = W / zoomWin.w;
+  const ctx = zpCanvas.getContext('2d');
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.fillStyle = '#e9ebf0';
+  ctx.fillRect(0, 0, W, H);
+  ctx.setTransform(k, 0, 0, k, -zoomWin.x * k, -zoomWin.y * k);
+  ctx.save();
+  ctx.beginPath(); ctx.rect(0, 0, page.w, page.h); ctx.clip();
+  renderPage(ctx, page);
+  if (act?.zp && act.s) drawStroke(ctx, act.s, page.color === 'dark');
+  ctx.restore();
+}
+function zoomPt(e) {
+  const r = zpCanvas.getBoundingClientRect();
+  return [zoomWin.x + ((e.clientX - r.left) / r.width) * zoomWin.w, zoomWin.y + ((e.clientY - r.top) / r.height) * zoomWin.h];
+}
+zpCanvas.addEventListener('pointerdown', (e) => {
+  if (!zoomWin || (e.pointerType === 'touch' && state.penOnly)) return;
+  if (e.pointerType === 'mouse' && e.button !== 0) return;
+  e.preventDefault();
+  zpCanvas.setPointerCapture(e.pointerId);
+  autoPenOnly(e);
+  const v = views.get(zoomWin.pageId);
+  if (!v) return;
+  const tool = (e.pointerType === 'pen' && (e.buttons & 32)) ? 'eraser' : state.tool;
+  act = { zp: true };
+  if (tool === 'eraser') {
+    const pt = zoomPt(e);
+    startErase(v, pt, e);
+    act.zp = true;
+  } else {
+    const t = tool === 'highlighter' ? 'highlighter' : 'pen';
+    const cfg = state.tools[t];
+    act = { type: 'stroke', id: e.pointerId, v, zp: true, s: { id: uid(), tool: t, color: cfg.color, width: cfg.width, points: [] } };
+    if (t === 'pen' && cfg.pen && cfg.pen !== 'fountain') act.s.pen = cfg.pen;
+    addStrokePoints(e);
+  }
+});
+zpCanvas.addEventListener('pointermove', (e) => {
+  if (!act?.zp || act.id !== e.pointerId) return;
+  if (act.type === 'stroke') addStrokePoints(e);
+  else if (act.type === 'erase') eraseTo(zoomPt(e));
+});
+const zpEnd = (e) => {
+  if (!act?.zp || act.id !== e.pointerId) return;
+  const s0 = act.type === 'stroke' ? act.s : null;
+  endPointer(e);
+  // Automatisch weiterrücken, wenn am rechten Rand geschrieben wurde
+  if (s0 && s0.points.length) {
+    const maxX = Math.max(...s0.points.map((p) => p[0]));
+    if (maxX > zoomWin.x + zoomWin.w * 0.82) moveZoom('right', 0.5);
+  }
+  renderZoomPanel();
+};
+zpCanvas.addEventListener('pointerup', zpEnd);
+zpCanvas.addEventListener('pointercancel', zpEnd);
+function moveZoom(dir, f = 0.7) {
+  if (!zoomWin) return;
+  const page = findPage(zoomWin.pageId);
+  if (dir === 'left') zoomWin.x -= zoomWin.w * f;
+  else if (dir === 'right') {
+    if (zoomWin.x + zoomWin.w >= page.w - 1) dir = 'newline';
+    else zoomWin.x += zoomWin.w * f;
+  }
+  if (dir === 'newline') { zoomWin.x = page.w * 0.08; zoomWin.y += zoomWin.h * 0.9; }
+  clampZoomWin();
+  positionZoomRect();
+  renderZoomPanel();
+}
+$('#zoom-panel .zp-bar').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-zp]');
+  if (!b) return;
+  if (b.dataset.zp === 'close') closeZoomPanel(); else moveZoom(b.dataset.zp);
+});
+window.addEventListener('resize', () => { if (zoomWin) { positionZoomRect(); renderZoomPanel(); } if (ruler.on) positionRuler(); });
 
 /* =====================================================================
    Bibliothek: Seitenleiste, Kopfleiste, Profil-Menü

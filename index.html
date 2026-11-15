@@ -117,12 +117,12 @@
         <button class="tool" data-tool="eraser" title="Radierer (E)"><span data-icon="eraser"></span></button>
         <button class="tool" data-tool="text" title="Textfeld (T)"><span data-icon="textbox"></span></button>
         <button class="tool" data-tool="note" title="Haftnotiz (N)"><span data-icon="note"></span></button>
-        <button class="tool" id="btn-insert" title="Bild, PDF oder Scan einfügen"><span data-icon="image"></span></button>
+        <button class="tool" data-tb="image" id="btn-insert" title="Bild, PDF oder Scan einfügen"><span data-icon="image"></span></button>
         <button class="tool" data-tool="shape" title="Formen (S)"><span data-icon="shapes"></span></button>
-        <button class="tool" data-tool="laser" title="Laserpointer (K)"><span data-icon="laser"></span></button>
+        <button class="tool" data-tool="laser" title="Laserpointer (K) – nochmal tippen für Zubehör"><span data-icon="laser"></span><span class="lasso-chev" data-icon="chev"></span></button>
         <span class="tools-sep"></span>
-        <button class="tool" id="btn-mic" title="Sprachaufnahme"><span data-icon="mic"></span><span class="rec-time" id="rec-time" hidden></span></button>
-        <button class="tool tool-wide" id="btn-view" title="Ansicht"><span data-icon="viewMode"></span><span data-icon="chev" class="mini-chev"></span></button>
+        <button class="tool" data-tb="mic" id="btn-mic" title="Sprachaufnahme"><span data-icon="mic"></span><span class="rec-time" id="rec-time" hidden></span></button>
+        <button class="tool tool-wide" data-tb="view" id="btn-view" title="Ansicht"><span data-icon="viewMode"></span><span data-icon="chev" class="mini-chev"></span></button>
       </div>
       <div class="tb-group tb-right">
         <button class="tbtn" id="btn-page" title="Seite hinzufügen und Seiten verwalten" aria-label="Seite hinzufügen"><span data-icon="pagePlus"></span></button>
@@ -150,6 +150,35 @@
         <button class="ibtn sm" id="btn-zoom-in" title="Vergrößern"><span data-icon="plus"></span></button>
       </div>
       <div class="floating page-ind" id="page-ind">1 / 1</div>
+
+      <!-- Lineal -->
+      <div class="ruler" id="ruler" hidden>
+        <div class="ruler-body"></div>
+        <button class="ruler-grip" type="button" title="Lineal verschieben" aria-label="Lineal verschieben"><span data-icon="move4"></span></button>
+        <button class="ruler-rot" type="button" title="Lineal drehen" aria-label="Lineal drehen"><span data-icon="rotate"></span></button>
+        <span class="ruler-angle" id="ruler-angle">0°</span>
+        <button class="ruler-close" type="button" title="Lineal ausblenden" aria-label="Lineal ausblenden"><span data-icon="close"></span></button>
+      </div>
+
+      <!-- Zeitmesser -->
+      <div class="floating timer-w" id="timer" hidden>
+        <button class="timer-mode" id="timer-mode" type="button">Stoppuhr</button>
+        <span class="timer-val" id="timer-val">0:00</span>
+        <button class="ibtn sm" id="timer-start" title="Start/Pause" aria-label="Start oder Pause"><span data-icon="play"></span></button>
+        <button class="ibtn sm" id="timer-reset" title="Zurücksetzen" aria-label="Zurücksetzen"><span data-icon="restore"></span></button>
+        <button class="ibtn sm" id="timer-close" title="Schließen" aria-label="Zeitmesser schließen"><span data-icon="close"></span></button>
+      </div>
+
+      <!-- Zoom-Ansicht -->
+      <div class="zoom-panel" id="zoom-panel" hidden>
+        <canvas id="zoom-canvas"></canvas>
+        <div class="zp-bar">
+          <button class="ibtn sm" data-zp="left" title="Nach links" aria-label="Nach links"><span data-icon="back"></span></button>
+          <button class="ibtn sm" data-zp="right" title="Nach rechts" aria-label="Nach rechts"><span data-icon="chevRight"></span></button>
+          <button class="ibtn sm" data-zp="newline" title="Neue Zeile" aria-label="Neue Zeile"><span data-icon="newline"></span></button>
+          <button class="ibtn sm" data-zp="close" title="Zoom-Ansicht schließen" aria-label="Zoom-Ansicht schließen"><span data-icon="close"></span></button>
+        </div>
+      </div>
     </div>
   </section>
 

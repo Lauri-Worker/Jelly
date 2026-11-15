@@ -12,6 +12,8 @@ Eine Notiz-Web-App im Stil digitaler Notizbücher: handschriftlich schreiben, PD
 - **Stift** mit Drucksensitivität (Apple Pencil, Surface Pen, Wacom), Farben und Strichstärken
 - **Textmarker** (halbtransparent, liegt nicht über der Schrift)
 - **Radierer:** entfernt ganze Striche. Das Radierer-Ende eines Stifts wird erkannt.
+- **Zubehör:** Lineal (verschieben, drehen, gerade Linien am Rand), Zoom-Ansicht (großes Schreibfeld unten), Zeitmesser (Stoppuhr/Countdown), Werkzeugleiste anpassen
+- **Formen:** Rechteck, Kreis, Dreieck, Raute, abgerundetes Rechteck, Linie, Pfeil, Winkel- und Bogenpfeil, freie Formerkennung
 - **Tape:** farbiges Klebeband zum Abdecken, antippen deckt auf
 - **Lasso:** rechteckig oder freihand, wählbar welche Inhalte (Handschrift, Bilder, Formen, Pfeile, Textfelder, Tape, Notizzettel) mitgenommen werden; auswählen, verschieben, skalieren, umfärben, duplizieren, kopieren und einfügen, löschen
 - **Formen:** Linie, Pfeil, Rechteck, Ellipse. Mit Umschalt entstehen Quadrat bzw. Kreis.
