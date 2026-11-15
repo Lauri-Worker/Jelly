@@ -14,6 +14,8 @@ Eine Notiz-Web-App im Stil digitaler Notizbücher: handschriftlich schreiben, PD
 - **Radierer:** entfernt ganze Striche. Das Radierer-Ende eines Stifts wird erkannt.
 - **Lasso:** auswählen, verschieben, skalieren, umfärben, duplizieren, kopieren und einfügen, löschen
 - **Formen:** Linie, Pfeil, Rechteck, Ellipse. Mit Umschalt entstehen Quadrat bzw. Kreis.
+- **Seiten wischen:** Seite für Seite mit dem Finger nach links/rechts blättern (oder fortlaufend vertikal scrollen); Apple Pencil wird erkannt, dann blättert der Finger und der Stift schreibt
+- **Animationen** beim Öffnen von Dokumenten und Ordnern, Hervorhebung beim Antippen
 - **Tabs:** geöffnete Notizbücher bleiben oben als Tabs offen (auch nach dem Neuladen)
 - **Stiftarten** Füller, Kugelschreiber, Pinsel; **Formerkennung** begradigt Linien, Kreise und Rechtecke
 - **Textfelder** mit Schriftart, Schriftgröße, fett und kursiv; **Haftnotizen**; **Laserpointer**; **Sprachaufnahmen**; **Lesezeichen**; **Suche** in Textfeldern und Haftnotizen

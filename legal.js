@@ -2,10 +2,12 @@
 // WICHTIG: Das Impressum enthält Platzhalter in [eckigen Klammern]. Bitte mit den echten
 // Angaben der Person ersetzen, die die Website betreibt. Die Texte sind keine Rechtsberatung.
 
-export const APP_VERSION = '1.5';
+export const APP_VERSION = '1.6';
 
-export const NEWS_VERSION = 5;
+export const NEWS_VERSION = 6;
 export const NEWS = [
+  { title: 'Seiten wischen', text: 'Blättere mit dem Finger nach links und rechts durch deine Seiten – jede Seite füllt den Bildschirm. Fortlaufendes Scrollen gibt es weiter unter Ansicht.' },
+  { title: 'Flüssige Animationen', text: 'Dokumente öffnen sich mit einer Zoom-Animation, Ordner gleiten herein, angetippte Elemente werden hervorgehoben.' },
   { title: 'Tabs für geöffnete Dokumente', text: 'Geöffnete Notizbücher bleiben oben als Tabs offen – antippen zum Wechseln, × zum Schließen.' },
   { title: 'Neue Werkzeuge', text: 'Haftnotizen, Laserpointer, Sprachaufnahmen, Lesezeichen und Suche im Dokument.' },
   { title: 'Stifte und Text', text: 'Füller, Kugelschreiber oder Pinsel, Formerkennung sowie Schriftart, Schriftgröße, fett und kursiv für Textfelder.' },
