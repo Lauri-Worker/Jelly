@@ -953,7 +953,7 @@ function isLightColor(hex) {
 }
 
 /* ---------- Ordner ---------- */
-const FOLDER_COLORS = ['#3b9ae8', '#2f55b8', '#c4a0f5', '#94336f', '#a3401d', '#f2c418', '#9fe88a', '#f58bc5', '#ef4b4f', '#f7923a', '#f4f4f6', '#5a5b60', '#1c1c1f'];
+const FOLDER_COLORS = ['#6cb4f4', '#3b9ae8', '#2f55b8', '#c4a0f5', '#94336f', '#a3401d', '#f2c418', '#9fe88a', '#f58bc5', '#ef4b4f', '#f7923a', '#f4f4f6', '#5a5b60', '#1c1c1f'];
 const TRASH_DAYS = 30;
 let folders = [];
 let lastMetas = [];
@@ -1319,7 +1319,7 @@ async function renderLibrary() {
       <div class="item-slot">
         <div class="folder-ico${isLightColor(col) ? ' light' : ''}" style="--fc:${col}">
           <div class="folder-ico-back"></div>
-          <div class="folder-ico-front">${n && !inTrash ? `<span class="folder-count">${n}</span>` : ''}</div>
+          <div class="folder-ico-front"></div>
           ${star(!!f.favorite, esc(f.name))}
         </div>
       </div>
@@ -2009,7 +2009,7 @@ function renderOptions() {
   if (WIDTHS[t] && t !== 'eraser' && t !== 'shape') { html += widthsHtml(t, cfg); }
   if (cfg && 'color' in cfg && t !== 'shape') {
     const colors = paletteFor(t);
-    html += colors.map((c, i) => `${t === 'note' && i === colors.length - 1 ? '<span class="opt-sep"></span>' : ''}<button class="swatch ${t === 'note' ? 'sq' : ''} ${c === cfg.color ? 'active' : ''}" style="--c:${c}" data-color="${c}" title="${c}"></button>`).join('');
+    html += colors.map((c, i) => `${t === 'note' && i === colors.length - 1 ? '<span class="opt-sep"></span>' : ''}<button class="swatch ${t === 'note' ? 'sq' : ''} ${c === cfg.color ? 'active' : ''} ${isLightColor(c) ? 'lightc' : ''}" style="--c:${c}" data-color="${c}" title="${c}">${c === cfg.color && t !== 'note' ? icon('chev') : ''}</button>`).join('');
     if (t !== 'laser' && t !== 'note') {
       const custom = !colors.includes(cfg.color);
       html += `<label class="swatch custom ${custom ? 'active' : ''}" title="Eigene Farbe" ${custom ? `style="background:${cfg.color}"` : ''}><input type="color" value="${cfg.color}"></label>`;
@@ -2066,6 +2066,7 @@ $('#options').addEventListener('click', (e) => {
     openMenu(b, el, 'color-menu');
     return;
   }
+  if (b.dataset.color && b.dataset.color === cfg.color && t !== 'note') { $('#options input[type=color]')?.click(); return; }
   if (b.dataset.color) cfg.color = b.dataset.color;
   else if (b.dataset.width) cfg.width = +b.dataset.width;
   else if (b.dataset.size) cfg.size = +b.dataset.size;
