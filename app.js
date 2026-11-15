@@ -1533,7 +1533,7 @@ function openNewDialog() {
     if (dlg.returnValue !== 'ok') return;
     const nb = newNotebook({ title: $('#new-title').value.trim(), ...sel, folderId: targetFolder() });
     await saveFresh(nb);
-    openNotebook(nb.id);
+    showCreated(nb, 'Notizbuch erstellt');
   };
   dlg.returnValue = '';
   dlg.showModal();
@@ -3024,8 +3024,7 @@ async function importPDF(file) {
     nb.pages = pages;
     nb.assets = assets;
     await saveFresh(nb);
-    toast(`${pages.length} ${pages.length === 1 ? 'Seite' : 'Seiten'} importiert`);
-    openNotebook(nb.id);
+    showCreated(nb, `PDF hinzugefügt (${pages.length} ${pages.length === 1 ? 'Seite' : 'Seiten'})`);
   } catch (err) {
     console.error(err);
     toast('PDF-Import fehlgeschlagen: ' + (err?.message || err), 5000);
@@ -3289,7 +3288,7 @@ async function finishScan() {
     nb.pages = pages;
     nb.assets = assets;
     await saveFresh(nb);
-    openNotebook(nb.id);
+    showCreated(nb, 'Scan gespeichert');
   }
 }
 $('#file-scan').onchange = (e) => { onScanFiles(e.target.files); e.target.value = ''; };
@@ -4227,6 +4226,17 @@ async function exportLibrary() {
 /* =====================================================================
    Start
    ===================================================================== */
+/** Zeigt ein neu angelegtes Dokument in der Bibliothek an (statt es direkt zu öffnen). */
+async function showCreated(nb, msg) {
+  if (state.nb) await showLibrary(); else await renderLibrary();
+  toast(msg + ' – zum Öffnen antippen');
+  const card = [...document.querySelectorAll('#nb-grid .nb-card')].find((c) => c.querySelector('.nb-title')?.textContent === nb.title);
+  if (!card) return;
+  card.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  card.classList.add('just-created');
+  setTimeout(() => card.classList.remove('just-created'), 1600);
+}
+
 /** Ordner, in dem neue Dokumente landen (nur in der Ansicht „Dokumente“). */
 function targetFolder() { return state.libView === 'docs' ? state.libFolder : null; }
 

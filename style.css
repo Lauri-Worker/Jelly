@@ -1175,3 +1175,8 @@ canvas.live.laser { pointer-events: none; z-index: 2; }
 .menu.cover-menu { width: min(400px, calc(100vw - 16px)); padding: 6px 14px 14px; }
 .menu.cover-menu .swatches { gap: 10px; }
 @media (max-width: 720px) { .cp-designs { grid-template-columns: repeat(4, 1fr); } }
+
+/* Neu erstelltes Dokument kurz hervorheben */
+.nb-card.just-created .doc, .nb-card.just-created .folder-ico { animation: created .9s cubic-bezier(.2, .8, .2, 1); }
+.nb-card.just-created::before { opacity: 1; transform: none; transition-duration: .4s; }
+@keyframes created { 0% { transform: scale(.6); opacity: 0; } 60% { transform: scale(1.06); opacity: 1; } 100% { transform: none; } }
