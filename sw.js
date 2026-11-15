@@ -1,5 +1,5 @@
 // Offline-Unterstützung: alles network-first mit Cache als Fallback.
-const CACHE = 'jelly-notes-v10';
+const CACHE = 'jelly-notes-v11';
 const SHELL = ['./', './index.html', './style.css', './app.js', './db.js', './icon.svg', './apple-touch-icon.png', './icon-192.png', './icon-512.png', './manifest.webmanifest', './cloud.js', './scan.js', './legal.js', './covers.js', './config.js', './vendor/supabase.js', './vendor/fonts/bricolage-grotesque-latin-600-normal.woff2', './vendor/fonts/bricolage-grotesque-latin-700-normal.woff2', './vendor/fonts/bricolage-grotesque-latin-800-normal.woff2',
   './vendor/jspdf.umd.min.js', './vendor/pdf.min.js', './vendor/pdf.worker.min.js'];
 

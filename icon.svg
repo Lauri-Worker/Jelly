@@ -1,31 +1,30 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#4c88f2"/>
-      <stop offset="1" stop-color="#2353bf"/>
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#eef1f6"/>
     </linearGradient>
-    <linearGradient id="cover" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#ff8059"/>
-      <stop offset="1" stop-color="#df4535"/>
+    <linearGradient id="drop" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#7fd8f7"/>
+      <stop offset="1" stop-color="#2fa8e6"/>
+    </linearGradient>
+    <linearGradient id="pen" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#3a3d44"/>
+      <stop offset="1" stop-color="#0f1013"/>
     </linearGradient>
   </defs>
-  <!-- Hintergrund (vollflächig, iOS rundet die Ecken selbst ab) -->
+  <!-- Kachel (iOS rundet die Ecken selbst ab) -->
   <rect width="1024" height="1024" fill="url(#bg)"/>
-  <!-- Schatten -->
-  <rect x="276" y="196" width="520" height="692" rx="48" fill="#0b1f55" opacity=".28"/>
-  <!-- Seitenblock, rechts sichtbar -->
-  <rect x="300" y="174" width="486" height="682" rx="40" fill="#ffffff"/>
-  <path d="M770 214v602M756 206v618" stroke="#d9dee8" stroke-width="5"/>
-  <!-- Einband -->
-  <rect x="246" y="160" width="514" height="690" rx="44" fill="url(#cover)"/>
-  <!-- Buchrücken -->
-  <path d="M290 160h56v690h-56a44 44 0 0 1-44-44V204a44 44 0 0 1 44-44z" fill="#7a1a12" opacity=".35"/>
-  <path d="M346 160v690" stroke="#ffffff" stroke-opacity=".22" stroke-width="4"/>
-  <!-- Etikett mit Schrift -->
-  <rect x="420" y="296" width="260" height="164" rx="20" fill="#ffffff"/>
-  <path d="M462 352h176M462 404h118" stroke="#b8c8ee" stroke-width="18" stroke-linecap="round"/>
-  <!-- Gummiband -->
-  <rect x="694" y="160" width="28" height="690" fill="#26304a" opacity=".9"/>
-  <!-- Lesebändchen -->
-  <path d="M600 850v86l26-22 26 22v-86z" fill="#ffd34d"/>
+  <!-- Textzeilen -->
+  <path d="M246 300H610M246 440H530" stroke="#5cc6f2" stroke-width="58" stroke-linecap="round"/>
+  <!-- Jelly-Tropfen -->
+  <path d="M380 548C380 548 268 670 268 742C268 806 318 852 380 852C442 852 492 806 492 742C492 670 380 548 380 548Z" fill="url(#drop)"/>
+  <ellipse cx="342" cy="728" rx="26" ry="44" fill="#ffffff" opacity=".55" transform="rotate(-18 342 728)"/>
+  <!-- Stift -->
+  <g transform="rotate(32 690 560)">
+    <rect x="646" y="250" width="88" height="470" rx="44" fill="url(#pen)"/>
+    <rect x="646" y="250" width="30" height="470" rx="15" fill="#ffffff" opacity=".12"/>
+    <path d="M646 700H734L690 800Z" fill="#1d1e22"/>
+    <path d="M672 760H708L690 800Z" fill="#5cc6f2"/>
+  </g>
 </svg>
