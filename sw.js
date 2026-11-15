@@ -1,6 +1,6 @@
 // Offline-Unterstützung: alles network-first mit Cache als Fallback.
-const CACHE = 'jelly-notes-v6';
-const SHELL = ['./', './index.html', './style.css', './app.js', './db.js', './icon.svg', './apple-touch-icon.png', './icon-192.png', './icon-512.png', './manifest.webmanifest', './cloud.js', './scan.js', './config.js', './vendor/supabase.js',
+const CACHE = 'jelly-notes-v7';
+const SHELL = ['./', './index.html', './style.css', './app.js', './db.js', './icon.svg', './apple-touch-icon.png', './icon-192.png', './icon-512.png', './manifest.webmanifest', './cloud.js', './scan.js', './legal.js', './config.js', './vendor/supabase.js', './vendor/fonts/bricolage-grotesque-latin-600-normal.woff2', './vendor/fonts/bricolage-grotesque-latin-700-normal.woff2', './vendor/fonts/bricolage-grotesque-latin-800-normal.woff2',
   './vendor/jspdf.umd.min.js', './vendor/pdf.min.js', './vendor/pdf.worker.min.js'];
 
 self.addEventListener('install', (e) => {

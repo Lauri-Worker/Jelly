@@ -4,7 +4,9 @@ Eine Notiz-Web-App im Stil digitaler Notizbücher: handschriftlich schreiben, PD
 
 ## Funktionen
 
-- **Bibliothek** mit Notizbüchern (Cover-Farben oder Vorschau der ersten Seite), Suche, Umbenennen, Duplizieren, Löschen
+- **Bibliothek** mit Seitenleiste (Dokumente, Favoriten, Geteilt), Suche, Raster- oder Listenansicht, Filter nach Notizbüchern oder PDFs
+- **Favoriten** per Stern, **Papierkorb** mit Wiederherstellen (endgültiges Löschen nach 30 Tagen)
+- **Profil-Menü** mit Einstellungen (hell/dunkel/System, Nur-Stift-Modus), Cloud & Backup (ganze Bibliothek sichern und laden), Über, Datenschutz, Nutzungsbedingungen, Impressum
 - **Ordner**, beliebig ineinander verschachtelt: anlegen, umbenennen, einfärben, Notizbücher und Ordner verschieben (über das Menü oder per Drag-and-drop). Beim Löschen eines Ordners bleibt der Inhalt erhalten und rutscht eine Ebene nach oben.
 - **Papiervorlagen:** Blanko, Liniert, Kariert, Gepunktet, Cornell; Weiß, Creme, Dunkel; Hoch- oder Querformat
 - **Stift** mit Drucksensitivität (Apple Pencil, Surface Pen, Wacom), Farben und Strichstärken
@@ -79,7 +81,8 @@ Danach öffnet sich die App unter der Adresse des Dienstes in Safari, Chrome und
 - `index.html`, `style.css`: Oberfläche
 - `app.js`: Editor, Rendering (Canvas), Werkzeuge, Bibliothek, Import/Export
 - `db.js`: lokale Speicherung in IndexedDB (Notizbücher, Metadaten und Bilder getrennt)
+- `legal.js`: Texte für Datenschutz, Nutzungsbedingungen, Impressum (Platzhalter bitte ausfüllen) und Neuigkeiten
 - `scan.js`: Dokumenten-Scanner (Eckenerkennung, Entzerrung, Aufhellen)
 - `cloud.js`, `config.js`, `supabase/schema.sql`: Benutzerkonten und Cloud-Speicher mit Supabase
 - `sw.js`, `manifest.webmanifest`: PWA/Offline
-- `vendor/`: [jsPDF](https://github.com/parallax/jsPDF) (MIT), [pdf.js](https://github.com/mozilla/pdf.js) (Apache 2.0) und [supabase-js](https://github.com/supabase/supabase-js) (MIT)
+- `vendor/`: [jsPDF](https://github.com/parallax/jsPDF) (MIT), [pdf.js](https://github.com/mozilla/pdf.js) (Apache 2.0) [supabase-js](https://github.com/supabase/supabase-js) (MIT) und die Schrift Bricolage Grotesque (SIL Open Font License)

@@ -137,7 +137,7 @@ export const cloud = {
   async patchNotebook(id, patch) {
     const row = check(await sb.from('notebooks').select('meta, data').eq('id', id).single());
     Object.assign(row.data, patch);
-    const stamp = 'favorite' in patch && Object.keys(patch).length === 1 ? {} : { updatedAt: Date.now() };
+    const stamp = Object.keys(patch).every((k) => k === 'favorite' || k === 'trashed') ? {} : { updatedAt: Date.now() };
     Object.assign(row.meta, patch, stamp);
     check(await sb.from('notebooks').update({ meta: row.meta, data: row.data, updated_at: new Date().toISOString() }).eq('id', id));
   },

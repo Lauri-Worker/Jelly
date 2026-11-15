@@ -12,9 +12,6 @@
   <link rel="icon" href="icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
   <meta name="apple-mobile-web-app-title" content="Jelly Notes">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&display=swap">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -44,25 +41,58 @@
 
   <!-- Bibliothek -->
   <section id="library" class="view hidden">
-    <header class="lib-header">
-      <div class="brand"><img src="icon.svg" alt="" width="28" height="28"><span>Jelly Notes</span></div>
-      <div class="lib-search">
-        <span class="search-ic" data-icon="search"></span>
-        <input id="search" type="search" placeholder="Suchen" autocomplete="off">
+    <div class="lib-layout">
+      <!-- Seitenleiste -->
+      <aside id="lib-side" class="lib-side">
+        <div class="side-head">
+          <div class="brand"><img src="icon.svg" alt="" width="26" height="26"><span>Jelly Notes</span></div>
+          <button class="ibtn" id="btn-side-close" title="Seitenleiste ausblenden" aria-label="Seitenleiste ausblenden"><span data-icon="sidebar"></span></button>
+        </div>
+        <nav class="side-nav" aria-label="Bereiche">
+          <button class="side-item" data-view="docs" type="button"><span class="side-ic docs-ic"></span><span>Dokumente</span></button>
+          <button class="side-item" data-view="fav" type="button"><span class="side-ic" data-icon="bookmark"></span><span>Favoriten</span></button>
+          <button class="side-item" data-view="shared" type="button"><span class="side-ic" data-icon="people"></span><span>Geteilt</span></button>
+        </nav>
+      </aside>
+      <div class="side-scrim" id="side-scrim" hidden></div>
+
+      <div class="lib-content">
+        <header class="lib-top">
+          <div class="lib-top-left">
+            <button class="ibtn" id="btn-side-open" title="Seitenleiste einblenden" aria-label="Seitenleiste einblenden"><span data-icon="sidebar"></span></button>
+            <button class="circle-btn" id="btn-lib-back" title="Zurück" aria-label="Zurück"><span data-icon="back"></span></button>
+          </div>
+          <div class="lib-top-title" id="lib-title">Dokumente</div>
+          <div class="lib-top-right">
+            <button class="top-ic" id="btn-search" title="Suchen" aria-label="Suchen"><span data-icon="search"></span></button>
+            <button class="top-ic" id="btn-bell" title="Neuigkeiten" aria-label="Neuigkeiten"><span data-icon="bell"></span><span class="bell-dot" id="bell-dot" hidden></span></button>
+            <button class="avatar" id="btn-avatar" title="Profil und Einstellungen" aria-label="Profil und Einstellungen">J</button>
+          </div>
+          <div class="search-wrap" id="search-wrap" hidden>
+            <span data-icon="search"></span>
+            <input id="search" type="search" placeholder="In allen Dokumenten suchen" autocomplete="off">
+            <button class="link" id="btn-search-close" type="button">Abbrechen</button>
+          </div>
+        </header>
+
+        <div class="lib-bar">
+          <button class="filter-btn" id="lib-filter" type="button"><span data-icon="filter"></span><span id="lib-filter-label">Alle</span></button>
+          <div class="lib-bar-right">
+            <button class="btn primary" id="btn-new"><span data-icon="plus"></span><span class="lbl">Neu</span></button>
+            <button class="btn ghost" id="btn-empty-trash" hidden><span data-icon="trash"></span><span>Papierkorb leeren</span></button>
+            <button class="ibtn" id="btn-layout" title="Ansicht wechseln" aria-label="Ansicht wechseln"><span data-icon="gridView"></span></button>
+            <span class="bar-sep"></span>
+            <button class="ibtn cloud-ic" id="btn-cloud" title="Cloud-Status" aria-label="Cloud-Status"><span data-icon="cloudOff"></span></button>
+          </div>
+        </div>
+
+        <main class="lib-main">
+          <p class="lib-note" id="lib-note" hidden></p>
+          <nav id="crumbs" class="crumbs" aria-label="Ordnerpfad" hidden></nav>
+          <div id="nb-grid" class="nb-grid"></div>
+        </main>
       </div>
-      <div class="lib-actions">
-        <button class="btn primary" id="btn-new"><span data-icon="plus"></span><span class="lbl">Neu</span></button>
-        <button class="ibtn" id="btn-account" title="Konto" hidden><span data-icon="user"></span></button>
-      </div>
-    </header>
-    <main class="lib-main">
-      <nav id="crumbs" class="crumbs" aria-label="Ordnerpfad" hidden></nav>
-      <h1 id="lib-title">Dokumente</h1>
-      <div class="lib-bar">
-        <button class="filter-btn" id="lib-filter" type="button"><span data-icon="filter"></span><span id="lib-filter-label">Alle</span></button>
-      </div>
-      <div id="nb-grid" class="nb-grid"></div>
-    </main>
+    </div>
   </section>
 
   <!-- Editor -->
@@ -168,6 +198,13 @@
       </div>
     </footer>
   </div>
+
+  <dialog id="dlg-info" class="info-dlg">
+    <form method="dialog" class="dlg">
+      <div class="info-head"><h2 id="info-title"></h2><button class="ibtn" value="close" aria-label="Schließen"><span data-icon="close"></span></button></div>
+      <div class="info-body" id="info-body"></div>
+    </form>
+  </dialog>
 
   <div id="toast" role="status" aria-live="polite"></div>
 

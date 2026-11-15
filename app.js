@@ -1,5 +1,6 @@
 import { db as localDb } from './db.js';
 import { cloud, auth, cloudConfigured } from './cloud.js';
+import { LEGAL, NEWS, NEWS_VERSION, APP_VERSION } from './legal.js';
 import { loadScanImage, detectCorners, defaultCorners, warpDocument } from './scan.js';
 
 /** Aktiver Speicher: lokal (IndexedDB) oder Cloud (Supabase, nach Anmeldung). */
@@ -48,6 +49,23 @@ const ICONS = {
   star: '<path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/>',
   chev: '<path d="m6 9 6 6 6-6"/>',
   filter: '<path d="M4 6h16M7 12h10M10 18h4"/>',
+  bookmark: '<path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4.5L5 21V4a1 1 0 0 1 1-1z"/><path d="m12 7 1.2 2.4 2.6.4-1.9 1.8.5 2.6-2.4-1.3-2.4 1.3.5-2.6-1.9-1.8 2.6-.4z"/>',
+  people: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7"/><path d="M18.5 14.5A6.5 6.5 0 0 1 21.5 20"/>',
+  bell: '<path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 21a2 2 0 0 0 4 0"/>',
+  gridView: '<rect x="4" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5"/>',
+  listView: '<path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/>',
+  cloud: '<path d="M7 18a4.5 4.5 0 0 1-.6-9A6 6 0 0 1 18 8.5a4.75 4.75 0 0 1-.5 9.5z"/><path d="m9.5 13 2 2 3.5-3.5"/>',
+  cloudOff: '<path d="M7 18a4.5 4.5 0 0 1-.6-9 6 6 0 0 1 1.3-2.1M10.5 5.2A6 6 0 0 1 18 8.5a4.75 4.75 0 0 1 2.4 8.2M17.5 18H7"/><path d="m3 3 18 18"/>',
+  close: '<path d="M6 6l12 12M18 6 6 18"/>',
+  settings: '<path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/>',
+  info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>',
+  shield: '<path d="M12 3 5 6v5c0 4.4 3 8.3 7 10 4-1.7 7-5.6 7-10V6z"/><path d="m9 12 2 2 4-4"/>',
+  doc: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/>',
+  about: '<rect x="4" y="3" width="16" height="18" rx="3"/><path d="M8 8h8M8 12h5"/><path d="m14 17 2-6 2 2-2 6"/>',
+  restore: '<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/>',
+  chevRight: '<path d="m9 6 6 6-6 6"/>',
+  palette: '<path d="M12 3a9 9 0 0 0 0 18c1.1 0 1.5-.8 1.5-1.6 0-.9-.6-1.4-.6-2.2 0-.9.7-1.4 1.6-1.4H17a4 4 0 0 0 4-4c0-4.7-4-8.8-9-8.8z"/><circle cx="7.5" cy="11" r="1"/><circle cx="10.5" cy="7" r="1"/><circle cx="15" cy="7.5" r="1"/>',
+  folderFill: '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" fill="currentColor"/>',
   share: '<path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><path d="m16 6-4-4-4 4"/><path d="M12 2v13"/>',
   page: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/>',
   file: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 15h6"/>',
@@ -206,7 +224,9 @@ const state = {
   selection: null,
   savedAssets: new Set(),
   libFolder: null, // geöffneter Ordner in der Bibliothek (null = oberste Ebene)
-  libFilter: 'all', // 'all' | 'fav'
+  libFilter: 'all', // 'all' | 'notebook' | 'pdf'
+  libView: 'docs', // 'docs' | 'fav' | 'shared' | 'trash'
+  libLayout: (() => { try { return localStorage.getItem('jelly.libLayout') || 'grid'; } catch { return 'grid'; } })(),
 };
 let clipboard = null;
 
@@ -567,7 +587,7 @@ async function makeThumb(nb, width = 480) {
 }
 function metaOf(nb, thumb) {
   const p0 = nb.pages[0];
-  return { id: nb.id, title: nb.title, cover: nb.cover, kind: nb.kind || 'notebook', favorite: !!nb.favorite, ratio: p0 ? p0.h / p0.w : PAGE_H / PAGE_W, folderId: nb.folderId || null, createdAt: nb.createdAt, updatedAt: nb.updatedAt, pageCount: nb.pages.length, thumb };
+  return { id: nb.id, title: nb.title, cover: nb.cover, kind: nb.kind || 'notebook', favorite: !!nb.favorite, trashed: nb.trashed || null, ratio: p0 ? p0.h / p0.w : PAGE_H / PAGE_W, folderId: nb.folderId || null, createdAt: nb.createdAt, updatedAt: nb.updatedAt, pageCount: nb.pages.length, thumb };
 }
 function saveNow() {
   clearTimeout(saveTimer);
@@ -635,9 +655,11 @@ function isLightColor(hex) {
 }
 
 /* ---------- Ordner ---------- */
-const FOLDER_COLORS = ['#3a9bd1', '#5b62c9', '#9b59c9', '#d9534f', '#ef8a3c', '#e9c046', '#4fae6a', '#6b7280'];
+const FOLDER_COLORS = ['#3b9ae8', '#2f55b8', '#c4a0f5', '#94336f', '#a3401d', '#f2c418', '#9fe88a', '#f58bc5', '#ef4b4f', '#f7923a', '#f4f4f6', '#5a5b60', '#1c1c1f'];
+const TRASH_DAYS = 30;
 let folders = [];
 let lastMetas = [];
+let trashPurged = false;
 const folderById = (id) => folders.find((f) => f.id === id);
 /** Ordner-ID, die es wirklich gibt; sonst null (= oberste Ebene). */
 const validFolder = (id) => (id && folderById(id) ? id : null);
@@ -658,22 +680,33 @@ function isInside(id, ancestorId) {
   }
   return false;
 }
+/** Liegt der Ordner (oder einer darüber) im Papierkorb? */
+const inTrashedFolder = (id) => folderPath(validFolder(id)).some((f) => f.trashed);
+const liveFolder = (f) => !f.trashed && !inTrashedFolder(f.parentId);
+const liveNb = (m) => !m.trashed && !inTrashedFolder(m.folderId);
 function childCounts(id) {
   return {
-    folders: folders.filter((f) => validFolder(f.parentId) === id).length,
-    notebooks: lastMetas.filter((m) => validFolder(m.folderId) === id).length,
+    folders: folders.filter((f) => !f.trashed && validFolder(f.parentId) === id).length,
+    notebooks: lastMetas.filter((m) => !m.trashed && validFolder(m.folderId) === id).length,
   };
 }
 function countLabel({ folders: f, notebooks: n }) {
   const parts = [];
-  if (n) parts.push(`${n} ${n === 1 ? 'Notizbuch' : 'Notizbücher'}`);
-  if (f) parts.push(`${f} ${f === 1 ? 'Ordner' : 'Ordner'}`);
+  if (n) parts.push(`${n} ${n === 1 ? 'Dokument' : 'Dokumente'}`);
+  if (f) parts.push(`${f} Ordner`);
   return parts.join(' · ') || 'Leer';
 }
 function openFolder(id) {
+  state.libView = 'docs';
   state.libFolder = validFolder(id);
-  state.libFilter = 'all';
-  $('#search').value = '';
+  closeSearch(false);
+  renderLibrary();
+  $('.lib-main').scrollTop = 0;
+}
+function setLibView(v) {
+  state.libView = v;
+  closeSearch(false);
+  if (isNarrowLib()) setLibSide(false);
   renderLibrary();
   $('.lib-main').scrollTop = 0;
 }
@@ -681,7 +714,7 @@ async function createFolder() {
   const name = await ask({ title: 'Neuer Ordner', input: 'Neuer Ordner', ok: 'Erstellen' });
   if (!name?.trim()) return;
   const now = Date.now();
-  const f = { id: uid(), name: name.trim(), parentId: state.libFolder, color: FOLDER_COLORS[0], createdAt: now, updatedAt: now };
+  const f = { id: uid(), name: name.trim(), parentId: state.libView === 'docs' ? state.libFolder : null, color: FOLDER_COLORS[0], createdAt: now, updatedAt: now };
   await db.saveFolder(f);
   renderLibrary();
 }
@@ -702,21 +735,78 @@ async function moveItem(item, dest) {
   toast(`Verschoben nach „${dest ? folderById(dest).name : 'Dokumente'}“`);
   renderLibrary();
 }
-async function deleteFolder(f) {
-  const parent = validFolder(f.parentId);
-  for (const sub of folders.filter((x) => x.parentId === f.id)) {
-    sub.parentId = parent;
-    await db.saveFolder(sub);
-  }
-  for (const m of lastMetas.filter((x) => x.folderId === f.id)) await db.patchNotebook(m.id, { folderId: parent });
-  await db.deleteFolder(f.id);
-  if (state.libFolder === f.id) state.libFolder = parent;
-  toast('Ordner gelöscht');
+
+/* ---------- Papierkorb ---------- */
+async function trashFolder(f) {
+  f.trashed = Date.now();
+  await db.saveFolder(f);
+  if (state.libFolder && isInside(state.libFolder, f.id)) state.libFolder = validFolder(f.parentId);
+  toast('Ordner in den Papierkorb verschoben');
   renderLibrary();
 }
+async function trashNotebook(m) {
+  await db.patchNotebook(m.id, { trashed: Date.now() });
+  toast('In den Papierkorb verschoben');
+  renderLibrary();
+}
+async function restoreItem(type, item) {
+  if (type === 'folder') {
+    item.trashed = null;
+    if (inTrashedFolder(item.parentId)) item.parentId = null;
+    await db.saveFolder(item);
+  } else {
+    await db.patchNotebook(item.id, inTrashedFolder(item.folderId) ? { trashed: null, folderId: null } : { trashed: null });
+  }
+  toast('Wiederhergestellt');
+  renderLibrary();
+}
+/** Löscht einen Ordner samt Inhalt endgültig. */
+async function destroyFolder(f) {
+  for (const sub of folders.filter((x) => x.parentId === f.id)) await destroyFolder(sub);
+  for (const m of lastMetas.filter((x) => x.folderId === f.id)) await db.deleteNotebook(m.id);
+  await db.deleteFolder(f.id);
+}
+function trashTop() {
+  return {
+    folders: folders.filter((f) => f.trashed && !inTrashedFolder(f.parentId)),
+    notebooks: lastMetas.filter((m) => m.trashed && !inTrashedFolder(m.folderId)),
+  };
+}
+async function emptyTrash() {
+  const t = trashTop();
+  const n = t.folders.length + t.notebooks.length;
+  if (!n) return;
+  if (!(await ask({ title: 'Papierkorb leeren?', message: `${n} ${n === 1 ? 'Element wird' : 'Elemente werden'} endgültig gelöscht. Das lässt sich nicht rückgängig machen.`, ok: 'Endgültig löschen', danger: true }))) return;
+  for (const f of t.folders) await destroyFolder(f);
+  for (const m of t.notebooks) await db.deleteNotebook(m.id);
+  toast('Papierkorb geleert');
+  renderLibrary();
+}
+async function purgeOldTrash() {
+  const limit = Date.now() - TRASH_DAYS * 864e5;
+  let n = 0;
+  for (const f of folders.filter((x) => x.trashed && x.trashed < limit)) { await destroyFolder(f); n++; }
+  for (const m of lastMetas.filter((x) => x.trashed && x.trashed < limit)) { await db.deleteNotebook(m.id); n++; }
+  return n;
+}
+const daysLeft = (ts) => Math.max(0, Math.ceil((ts + TRASH_DAYS * 864e5 - Date.now()) / 864e5));
+function trashMenu(anchor, type, item) {
+  openMenu(anchor, [
+    { label: 'Wiederherstellen', icon: 'restore', action: () => restoreItem(type, item) },
+    '-',
+    { label: 'Endgültig löschen', icon: 'trash', danger: true, action: async () => {
+      const name = type === 'folder' ? item.name : item.title;
+      if (!(await ask({ title: 'Endgültig löschen?', message: `„${name}“${type === 'folder' ? ' und sein Inhalt werden' : ' wird'} endgültig gelöscht.`, ok: 'Löschen', danger: true }))) return;
+      if (type === 'folder') await destroyFolder(item); else await db.deleteNotebook(item.id);
+      renderLibrary();
+    } },
+  ]);
+}
+
 function folderMenu(anchor, f) {
   openMenu(anchor, [
     { label: 'Öffnen', icon: 'folder', action: () => openFolder(f.id) },
+    { label: f.favorite ? 'Aus Favoriten entfernen' : 'Zu Favoriten', icon: 'star', action: async () => { f.favorite = !f.favorite; await db.saveFolder(f); renderLibrary(); } },
     { label: 'Umbenennen', icon: 'edit', action: async () => {
       const t = await ask({ title: 'Ordner umbenennen', input: f.name, ok: 'Speichern' });
       if (!t?.trim()) return;
@@ -725,27 +815,17 @@ function folderMenu(anchor, f) {
       await db.saveFolder(f);
       renderLibrary();
     } },
-    { label: 'Farbe ändern', icon: 'grid', action: () => folderColorMenu(anchor, f) },
+    { label: 'Farbe ändern', icon: 'palette', action: () => folderColorMenu(anchor, f) },
     { label: 'Verschieben nach …', icon: 'move', action: () => moveDialog({ type: 'folder', id: f.id, name: f.name }) },
     '-',
-    { label: 'Ordner löschen', icon: 'trash', danger: true, action: async () => {
-      const c = childCounts(f.id);
-      const n = c.folders + c.notebooks;
-      const ok = await ask({
-        title: 'Ordner löschen?',
-        message: n ? `„${f.name}“ wird gelöscht. Der Inhalt (${countLabel(c)}) bleibt erhalten und wird eine Ebene nach oben verschoben.` : `„${f.name}“ wird gelöscht.`,
-        ok: 'Löschen', danger: true,
-      });
-      if (ok) deleteFolder(f);
-    } },
+    { label: 'In den Papierkorb', icon: 'trash', danger: true, action: () => trashFolder(f) },
   ]);
 }
 function folderColorMenu(anchor, f) {
   const el = document.createElement('div');
   el.innerHTML = '<div class="menu-title">Ordnerfarbe</div>';
   const sw = document.createElement('div');
-  sw.className = 'swatches';
-  sw.style.padding = '6px 10px 10px';
+  sw.className = 'swatches folder-swatches';
   for (const c of FOLDER_COLORS) {
     const b = document.createElement('button');
     b.className = 'swatch' + (c === f.color ? ' active' : '');
@@ -774,13 +854,13 @@ function moveDialog(item) {
     b.className = 'tree-row';
     b.disabled = blocked || here;
     b.style.paddingLeft = 12 + depth * 22 + 'px';
-    b.innerHTML = `<span class="tree-ic" style="color:${color || 'var(--text-2)'}">${icon(id ? 'folder' : 'page')}</span><span>${esc(name)}</span>${here ? '<span class="tree-hint">aktuell</span>' : ''}`;
+    b.innerHTML = `<span class="tree-ic" style="color:${color || 'var(--accent)'}">${icon(id ? 'folderFill' : 'folder')}</span><span>${esc(name)}</span>${here ? '<span class="tree-hint">aktuell</span>' : ''}`;
     b.onclick = () => { dlg.close(); moveItem(item, id); };
     tree.appendChild(b);
   };
   row(null, 'Dokumente', 0);
   const walk = (parent, depth) => {
-    folders.filter((f) => validFolder(f.parentId) === parent)
+    folders.filter((f) => liveFolder(f) && validFolder(f.parentId) === parent)
       .sort((a, b) => a.name.localeCompare(b.name, 'de'))
       .forEach((f) => { row(f.id, f.name, depth, f.color); walk(f.id, depth + 1); });
   };
@@ -821,51 +901,69 @@ function makeDropTarget(el, folderId) {
   });
 }
 
-function renderCrumbs(q, fav) {
-  const el = $('#crumbs');
-  const path = folderPath(state.libFolder);
-  $('#lib-title').textContent = q ? 'Suchergebnisse' : fav ? 'Favoriten' : (path.length ? path[path.length - 1].name : 'Dokumente');
-  el.innerHTML = '';
-  el.hidden = !path.length || !!q || !!fav;
-  if (el.hidden) return;
-  const crumbs = [{ id: null, name: 'Dokumente' }, ...path.slice(0, -1)];
-  crumbs.forEach((c, i) => {
-    const b = document.createElement('button');
-    b.type = 'button';
-    b.className = 'crumb';
-    b.innerHTML = (i === 0 ? icon('back') : '') + `<span>${esc(c.name)}</span>`;
-    b.onclick = () => openFolder(c.id);
-    makeDropTarget(b, c.id);
-    el.appendChild(b);
-    el.insertAdjacentHTML('beforeend', '<span class="crumb-sep">›</span>');
-  });
-}
+/* ---------- Bibliothek zeichnen ---------- */
+const TYPE_FILTERS = { all: 'Alle', notebook: 'Notizbücher', pdf: 'PDFs' };
+const isPdf = (m) => m.kind === 'pdf';
+const matchesType = (m) => state.libFilter === 'all' || (state.libFilter === 'pdf' ? isPdf(m) : !isPdf(m));
 
 async function renderLibrary() {
-  const q = $('#search').value.trim().toLowerCase();
-  const fav = state.libFilter === 'fav';
-  const [metas, fl] = await Promise.all([db.listMeta(), db.listFolders()]);
+  const q = $('#search-wrap').hidden ? '' : $('#search').value.trim().toLowerCase();
+  let [metas, fl] = await Promise.all([db.listMeta(), db.listFolders()]);
   folders = fl;
   lastMetas = metas;
-  if (state.libFolder && !folderById(state.libFolder)) state.libFolder = null;
-  const cur = state.libFolder;
-  renderCrumbs(q, fav);
-  $('#lib-filter-label').textContent = fav ? 'Favoriten' : 'Alle';
-  let shownFolders, shownNbs;
-  if (q) {
-    shownFolders = folders.filter((f) => f.name.toLowerCase().includes(q) && (!fav || f.favorite));
-    shownNbs = metas.filter((m) => m.title.toLowerCase().includes(q) && (!fav || m.favorite));
-  } else if (fav) {
-    shownFolders = folders.filter((f) => f.favorite);
-    shownNbs = metas.filter((m) => m.favorite);
-  } else {
-    shownFolders = folders.filter((f) => validFolder(f.parentId) === cur);
-    shownNbs = metas.filter((m) => validFolder(m.folderId) === cur);
+  if (!trashPurged) {
+    trashPurged = true;
+    if (await purgeOldTrash()) [metas, fl] = await Promise.all([db.listMeta(), db.listFolders()]);
+    folders = fl;
+    lastMetas = metas;
   }
+  if (state.libFolder && (!folderById(state.libFolder) || !liveFolder(folderById(state.libFolder)))) state.libFolder = null;
+  const view = state.libView;
+  const cur = state.libFolder;
+  const path = folderPath(cur);
+
+  // Kopfbereich
+  $('#lib-title').textContent = q ? 'Suchergebnisse'
+    : view === 'fav' ? 'Favoriten' : view === 'shared' ? 'Geteilt' : view === 'trash' ? 'Papierkorb'
+      : (path.length ? path[path.length - 1].name : 'Dokumente');
+  $('#btn-lib-back').hidden = !((view === 'docs' && cur && !q) || view === 'trash');
+  document.querySelectorAll('.side-item').forEach((b) => b.classList.toggle('active', b.dataset.view === view));
+  $('#lib-filter-label').textContent = TYPE_FILTERS[state.libFilter];
+  $('#lib-filter').hidden = view === 'shared' || view === 'trash';
+  $('#btn-new').hidden = view === 'shared' || view === 'trash';
+  const trash = trashTop();
+  $('#btn-empty-trash').hidden = view !== 'trash' || !(trash.folders.length + trash.notebooks.length);
+  $('#btn-layout').innerHTML = icon(state.libLayout === 'list' ? 'listView' : 'gridView');
+  $('#btn-layout').title = state.libLayout === 'list' ? 'Als Raster anzeigen' : 'Als Liste anzeigen';
+  const note = $('#lib-note');
+  note.hidden = view !== 'trash';
+  note.textContent = `Elemente im Papierkorb werden nach ${TRASH_DAYS} Tagen endgültig gelöscht.`;
+
+  let shownFolders = [], shownNbs = [];
+  if (view === 'trash') {
+    shownFolders = trash.folders;
+    shownNbs = trash.notebooks;
+  } else if (view === 'shared') {
+    // Teilen ist noch nicht verfügbar
+  } else if (q) {
+    shownFolders = folders.filter((f) => liveFolder(f) && f.name.toLowerCase().includes(q));
+    shownNbs = metas.filter((m) => liveNb(m) && m.title.toLowerCase().includes(q));
+  } else if (view === 'fav') {
+    shownFolders = folders.filter((f) => liveFolder(f) && f.favorite);
+    shownNbs = metas.filter((m) => liveNb(m) && m.favorite);
+  } else {
+    shownFolders = folders.filter((f) => liveFolder(f) && validFolder(f.parentId) === cur);
+    shownNbs = metas.filter((m) => liveNb(m) && validFolder(m.folderId) === cur);
+  }
+  if (view !== 'trash') shownNbs = shownNbs.filter(matchesType);
+  if (view !== 'trash' && state.libFilter !== 'all') shownFolders = view === 'docs' && !q ? shownFolders : [];
   shownFolders.sort((a, b) => a.name.localeCompare(b.name, 'de'));
   shownNbs.sort((a, b) => b.updatedAt - a.updatedAt);
   const where = (id) => folderPath(id).map((f) => f.name).join(' › ') || 'Dokumente';
-  const star = (on, label) => `<button class="star${on ? ' on' : ''}" title="${on ? 'Aus Favoriten entfernen' : 'Zu Favoriten'}" aria-label="${label} ${on ? 'aus Favoriten entfernen' : 'zu Favoriten hinzufügen'}" aria-pressed="${on}">${icon('star')}</button>`;
+  const inTrash = view === 'trash';
+  const metaText = (ts, parent, trashed) => inTrash ? `Noch ${daysLeft(trashed)} ${daysLeft(trashed) === 1 ? 'Tag' : 'Tage'}`
+    : (q || view === 'fav') ? esc(where(parent)) : dateFmt.format(ts);
+  const star = (on, label) => inTrash ? '' : `<button class="star${on ? ' on' : ''}" title="${on ? 'Aus Favoriten entfernen' : 'Zu Favoriten'}" aria-label="${label} ${on ? 'aus Favoriten entfernen' : 'zu Favoriten hinzufügen'}" aria-pressed="${on}">${icon('star')}</button>`;
   const label = (title, meta) => `
     <div class="nb-info">
       <div class="item-title"><span class="nb-title">${esc(title)}</span><button class="nb-more" title="Optionen" aria-label="Optionen für ${esc(title)}">${icon('chev')}</button></div>
@@ -873,86 +971,99 @@ async function renderLibrary() {
     </div>`;
 
   const grid = $('#nb-grid');
+  grid.classList.toggle('list', state.libLayout === 'list');
   grid.innerHTML = '';
   for (const f of shownFolders) {
     const card = document.createElement('div');
     card.className = 'nb-card folder-card';
     const c = childCounts(f.id);
     const n = c.folders + c.notebooks;
+    const col = f.color || FOLDER_COLORS[0];
     card.innerHTML = `
       <div class="item-slot">
-        <div class="folder-ico" style="--fc:${f.color || FOLDER_COLORS[0]}">
+        <div class="folder-ico${isLightColor(col) ? ' light' : ''}" style="--fc:${col}">
           <div class="folder-ico-back"></div>
-          <div class="folder-ico-front">${n ? `<span class="folder-count">${n}</span>` : ''}</div>
+          <div class="folder-ico-front">${n && !inTrash ? `<span class="folder-count">${n}</span>` : ''}</div>
           ${star(!!f.favorite, esc(f.name))}
         </div>
       </div>
-      ${label(f.name, q || fav ? esc(where(f.parentId)) : dateFmt.format(f.updatedAt || f.createdAt))}`;
-    card.onclick = (e) => { if (!e.target.closest('.nb-more, .star')) openFolder(f.id); };
-    card.querySelector('.nb-more').onclick = (e) => { e.stopPropagation(); folderMenu(e.currentTarget, f); };
-    card.querySelector('.star').onclick = async (e) => {
+      ${label(f.name, metaText(f.updatedAt || f.createdAt, f.parentId, f.trashed))}`;
+    card.onclick = (e) => {
+      if (e.target.closest('.star')) return;
+      if (inTrash) { trashMenu(card.querySelector('.nb-more'), 'folder', f); return; }
+      if (!e.target.closest('.nb-more')) openFolder(f.id);
+    };
+    card.querySelector('.nb-more').onclick = (e) => { e.stopPropagation(); inTrash ? trashMenu(e.currentTarget, 'folder', f) : folderMenu(e.currentTarget, f); };
+    card.querySelector('.star')?.addEventListener('click', async (e) => {
       e.stopPropagation();
       f.favorite = !f.favorite;
       await db.saveFolder(f);
       renderLibrary();
-    };
-    makeDraggable(card, { type: 'folder', id: f.id, name: f.name });
-    makeDropTarget(card, f.id);
+    });
+    if (!inTrash) { makeDraggable(card, { type: 'folder', id: f.id, name: f.name }); makeDropTarget(card, f.id); }
     grid.appendChild(card);
   }
   for (const m of shownNbs) {
     const card = document.createElement('div');
     card.className = 'nb-card';
-    const colored = m.cover && m.cover !== 'none' && m.kind !== 'pdf';
+    const colored = m.cover && m.cover !== 'none' && !isPdf(m);
     const ratio = m.ratio || PAGE_H / PAGE_W;
     const shape = colored ? 'doc-cover' : 'doc-page';
     const orient = colored || ratio >= 1 ? 'portrait' : 'landscape';
-    const ar = colored ? '3 / 4' : `${1} / ${ratio.toFixed(4)}`;
+    const ar = colored ? '3 / 4' : `1 / ${ratio.toFixed(4)}`;
     card.innerHTML = `
       <div class="item-slot">
         <div class="doc ${shape} ${orient}${colored && isLightColor(m.cover) ? ' light' : ''}" style="--cover:${colored ? m.cover : '#fff'};aspect-ratio:${ar}">
           ${colored ? '' : (m.thumb ? `<img src="${m.thumb}" alt="" draggable="false">` : '')}
+          ${isPdf(m) ? '<span class="pdf-badge">PDF</span>' : ''}
           ${star(!!m.favorite, esc(m.title))}
         </div>
       </div>
-      ${label(m.title, q || fav ? esc(where(validFolder(m.folderId))) : dateFmt.format(m.updatedAt))}`;
-    card.onclick = (e) => { if (!e.target.closest('.nb-more, .star')) openNotebook(m.id); };
-    card.querySelector('.nb-more').onclick = (e) => { e.stopPropagation(); notebookMenu(e.currentTarget, m); };
-    card.querySelector('.star').onclick = async (e) => {
+      ${label(m.title, metaText(m.updatedAt, validFolder(m.folderId), m.trashed))}`;
+    card.onclick = (e) => {
+      if (e.target.closest('.star')) return;
+      if (inTrash) { trashMenu(card.querySelector('.nb-more'), 'notebook', m); return; }
+      if (!e.target.closest('.nb-more')) openNotebook(m.id);
+    };
+    card.querySelector('.nb-more').onclick = (e) => { e.stopPropagation(); inTrash ? trashMenu(e.currentTarget, 'notebook', m) : notebookMenu(e.currentTarget, m); };
+    card.querySelector('.star')?.addEventListener('click', async (e) => {
       e.stopPropagation();
       await db.patchNotebook(m.id, { favorite: !m.favorite });
       renderLibrary();
-    };
-    makeDraggable(card, { type: 'notebook', id: m.id, name: m.title });
+    });
+    if (!inTrash) makeDraggable(card, { type: 'notebook', id: m.id, name: m.title });
     grid.appendChild(card);
   }
   if (!shownFolders.length && !shownNbs.length) {
-    const msg = q
-      ? ['Keine Treffer', `Für „${esc(q)}“ wurde nichts gefunden.`]
-      : fav
-        ? ['Noch keine Favoriten', 'Tippe bei einem Notizbuch, PDF oder Ordner auf den <b>Stern</b>, damit es hier erscheint.']
-        : cur
-          ? ['Dieser Ordner ist leer', 'Tippe auf <b>+ Neu</b>, um hier ein Notizbuch, ein PDF oder einen Ordner anzulegen, oder verschiebe etwas hierher.']
-          : ['Noch keine Dokumente', 'Tippe auf <b>+ Neu</b>, um ein Notizbuch anzulegen, ein PDF hinzuzufügen oder ein Dokument zu scannen.'];
-    grid.innerHTML = `<div class="lib-empty"><span class="lib-empty-ic">${icon(q ? 'search' : fav ? 'star' : 'folder')}</span><h2>${msg[0]}</h2><p>${msg[1]}</p></div>`;
+    const typeWord = state.libFilter === 'pdf' ? 'PDFs' : state.libFilter === 'notebook' ? 'Notizbücher' : 'Dokumente';
+    const [ic, h, p] = q ? ['search', 'Keine Treffer', `Für „${esc(q)}“ wurde nichts gefunden.`]
+      : view === 'trash' ? ['trash', 'Der Papierkorb ist leer', 'Gelöschte Notizbücher, PDFs und Ordner landen hier und können wiederhergestellt werden.']
+        : view === 'shared' ? ['people', 'Noch nichts geteilt', 'Hier erscheinen später Dokumente, die du mit anderen teilst. Das Teilen ist noch nicht verfügbar – bis dahin kannst du Dokumente über ⌄ → „Als PDF exportieren“ weitergeben.']
+          : view === 'fav' ? ['bookmark', 'Noch keine Favoriten', 'Tippe bei einem Notizbuch, PDF oder Ordner auf den <b>Stern</b>, damit es hier erscheint.']
+            : state.libFilter !== 'all' ? ['filter', `Keine ${typeWord}`, `Hier gibt es keine ${typeWord}. Stelle den Filter oben links auf <b>Alle</b>.`]
+              : cur ? ['folder', 'Dieser Ordner ist leer', 'Tippe auf <b>+ Neu</b>, um hier ein Notizbuch, ein PDF oder einen Ordner anzulegen, oder verschiebe etwas hierher.']
+                : ['folder', 'Noch keine Dokumente', 'Tippe auf <b>+ Neu</b>, um ein Notizbuch anzulegen, ein PDF hinzuzufügen oder ein Dokument zu scannen.'];
+    grid.innerHTML = `<div class="lib-empty"><span class="lib-empty-ic">${icon(ic)}</span><h2>${h}</h2><p>${p}</p></div>`;
   }
 }
 
 function notebookMenu(anchor, m) {
   openMenu(anchor, [
     { label: 'Öffnen', icon: 'page', action: () => openNotebook(m.id) },
+    { label: m.favorite ? 'Aus Favoriten entfernen' : 'Zu Favoriten', icon: 'star', action: async () => { await db.patchNotebook(m.id, { favorite: !m.favorite }); renderLibrary(); } },
     { label: 'Umbenennen', icon: 'edit', action: async () => {
       const t = await ask({ title: 'Umbenennen', input: m.title, ok: 'Speichern' });
       if (!t?.trim()) return;
       await db.patchNotebook(m.id, { title: t.trim() });
       renderLibrary();
     } },
-    ...(m.kind === 'pdf' ? [] : [{ label: 'Cover ändern', icon: 'grid', action: () => coverMenu(anchor, m) }]),
+    ...(isPdf(m) ? [] : [{ label: 'Cover ändern', icon: 'palette', action: () => coverMenu(anchor, m) }]),
     { label: 'Verschieben nach …', icon: 'move', action: () => moveDialog({ type: 'notebook', id: m.id, name: m.title }) },
     { label: 'Duplizieren', icon: 'copy', action: async () => {
       const nb = await db.loadNotebook(m.id);
       const copy = reId(nb);
       copy.title = nb.title + ' (Kopie)';
+      copy.favorite = false;
       await saveFresh(copy);
       renderLibrary();
     } },
@@ -963,12 +1074,7 @@ function notebookMenu(anchor, m) {
     } },
     { label: 'Backup exportieren (.json)', icon: 'download', action: async () => exportBackup(await db.loadNotebook(m.id)) },
     '-',
-    { label: 'Löschen', icon: 'trash', danger: true, action: async () => {
-      if (!(await ask({ title: 'Notizbuch löschen?', message: `„${m.title}“ wird endgültig gelöscht.`, ok: 'Löschen', danger: true }))) return;
-      await db.deleteNotebook(m.id);
-      renderLibrary();
-      toast('Notizbuch gelöscht');
-    } },
+    { label: 'In den Papierkorb', icon: 'trash', danger: true, action: () => trashNotebook(m) },
   ]);
 }
 
@@ -1073,7 +1179,7 @@ function openNewDialog() {
   buildSeg($('#new-orient'), [[false, 'Hoch'], [true, 'Quer']], sel.landscape, (v) => { sel.landscape = v; drawPapers(); });
   dlg.onclose = async () => {
     if (dlg.returnValue !== 'ok') return;
-    const nb = newNotebook({ title: $('#new-title').value.trim(), ...sel, folderId: state.libFolder });
+    const nb = newNotebook({ title: $('#new-title').value.trim(), ...sel, folderId: targetFolder() });
     await saveFresh(nb);
     openNotebook(nb.id);
   };
@@ -2041,7 +2147,7 @@ async function importPDF(file) {
   try {
     toast('PDF wird importiert …', 0);
     const { pages, assets } = await pdfToPages(file, (n, t) => toast(`PDF wird importiert … ${n}/${t}`, 0));
-    const nb = newNotebook({ title: file.name.replace(/\.pdf$/i, ''), cover: 'none', folderId: state.libFolder });
+    const nb = newNotebook({ title: file.name.replace(/\.pdf$/i, ''), cover: 'none', folderId: targetFolder() });
     nb.kind = 'pdf';
     nb.pages = pages;
     nb.assets = assets;
@@ -2113,11 +2219,28 @@ async function importBackup(file) {
   if (!file) return;
   try {
     const data = JSON.parse(await file.text());
-    if (data.format !== 'jelly-notebook' || !data.notebook?.pages) throw new Error('Unbekanntes Format');
-    const nb = reId(data.notebook);
-    nb.folderId = state.libFolder;
-    await saveFresh(nb);
-    toast('Backup importiert');
+    const target = state.libView === 'docs' ? state.libFolder : null;
+    if (data.format === 'jelly-library' && Array.isArray(data.notebooks)) {
+      toast('Sicherung wird geladen …', 0);
+      const idMap = {};
+      for (const f of data.folders || []) idMap[f.id] = uid();
+      for (const f of data.folders || []) {
+        await db.saveFolder({ ...f, id: idMap[f.id], parentId: f.parentId && idMap[f.parentId] ? idMap[f.parentId] : target, trashed: null });
+      }
+      for (const n of data.notebooks) {
+        const nb = reId(n);
+        nb.folderId = n.folderId && idMap[n.folderId] ? idMap[n.folderId] : target;
+        nb.trashed = null;
+        await saveFresh(nb);
+      }
+      toast(`${data.notebooks.length} ${data.notebooks.length === 1 ? 'Dokument' : 'Dokumente'} wiederhergestellt`);
+    } else if (data.format === 'jelly-notebook' && data.notebook?.pages) {
+      const nb = reId(data.notebook);
+      nb.folderId = target;
+      nb.trashed = null;
+      await saveFresh(nb);
+      toast('Backup importiert');
+    } else throw new Error('Unbekanntes Format');
     renderLibrary();
   } catch (err) {
     console.error(err);
@@ -2290,7 +2413,7 @@ async function finishScan() {
     rebuildAfterPageChange(state.cur + 1);
     toast(`${pages.length} ${pages.length === 1 ? 'Seite' : 'Seiten'} eingefügt`);
   } else {
-    const nb = newNotebook({ title: 'Scan ' + new Intl.DateTimeFormat('de-DE', { dateStyle: 'medium' }).format(new Date()), cover: 'none', folderId: state.libFolder });
+    const nb = newNotebook({ title: 'Scan ' + new Intl.DateTimeFormat('de-DE', { dateStyle: 'medium' }).format(new Date()), cover: 'none', folderId: targetFolder() });
     nb.pages = pages;
     nb.assets = assets;
     await saveFresh(nb);
@@ -2320,10 +2443,10 @@ function closeMenu() {
   document.removeEventListener('pointerdown', onOutside, true);
 }
 function onOutside(e) { if (menuEl && !menuEl.contains(e.target)) closeMenu(); }
-function openMenu(anchor, items) {
+function openMenu(anchor, items, cls = '') {
   closeMenu();
   const m = document.createElement('div');
-  m.className = 'menu';
+  m.className = 'menu' + (cls ? ' ' + cls : '');
   if (items instanceof HTMLElement) m.appendChild(items);
   else for (const it of items) {
     if (it === '-') { m.insertAdjacentHTML('beforeend', '<div class="menu-sep"></div>'); continue; }
@@ -2365,15 +2488,11 @@ $('#btn-new').onclick = (e) => openMenu(e.currentTarget, [
   { label: 'Dokument scannen', icon: 'scan', action: () => startScan('new', false) },
   { label: 'Backup laden', icon: 'upload', action: () => $('#file-backup').click() },
 ]);
-$('#lib-filter').onclick = (e) => openMenu(e.currentTarget, [
-  { label: 'Alle', icon: 'folder', check: state.libFilter === 'all', action: () => { state.libFilter = 'all'; renderLibrary(); } },
-  { label: 'Favoriten', icon: 'star', check: state.libFilter === 'fav', action: () => { state.libFilter = 'fav'; renderLibrary(); } },
-]);
+
 $('#file-pdf').onchange = (e) => { importPDF(e.target.files[0]); e.target.value = ''; };
 $('#file-pdf-append').onchange = (e) => { appendPDF(e.target.files[0]); e.target.value = ''; };
 $('#file-backup').onchange = (e) => { importBackup(e.target.files[0]); e.target.value = ''; };
 $('#file-image').onchange = (e) => { insertImageFile(e.target.files[0]); e.target.value = ''; };
-$('#search').addEventListener('input', () => renderLibrary());
 
 $('#btn-back').onclick = showLibrary;
 $('#btn-sidebar').onclick = () => {
@@ -2469,9 +2588,254 @@ document.addEventListener('visibilitychange', () => { if (document.hidden && sav
 window.addEventListener('pagehide', () => { if (saveTimer) saveNow(); });
 
 /* =====================================================================
+   Bibliothek: Seitenleiste, Kopfleiste, Profil-Menü
+   ===================================================================== */
+const isNarrowLib = () => window.innerWidth < 1000;
+let libSideOverlay = false;
+function getLibSidePref() { try { return localStorage.getItem('jelly.libSide') !== '0'; } catch { return true; } }
+function setLibSide(open) {
+  if (isNarrowLib()) libSideOverlay = open;
+  else { try { localStorage.setItem('jelly.libSide', open ? '1' : '0'); } catch { /* */ } }
+  applyLibSide();
+}
+function applyLibSide() {
+  const narrow = isNarrowLib();
+  const open = narrow ? libSideOverlay : getLibSidePref();
+  const lib = $('#library');
+  lib.classList.toggle('side-open', open);
+  lib.classList.toggle('side-narrow', narrow);
+  $('#side-scrim').hidden = !(narrow && open);
+  $('#btn-side-open').hidden = open && !narrow;
+}
+$('#btn-side-close').onclick = () => setLibSide(false);
+$('#btn-side-open').onclick = () => setLibSide(!(isNarrowLib() ? libSideOverlay : getLibSidePref()));
+$('#side-scrim').onclick = () => setLibSide(false);
+window.addEventListener('resize', applyLibSide);
+document.querySelectorAll('.side-item').forEach((b) => { b.onclick = () => setLibView(b.dataset.view); });
+$('.docs-ic').innerHTML = icon('folderFill');
+$('#btn-lib-back').onclick = () => {
+  if (state.libView === 'trash') { setLibView('docs'); return; }
+  const f = folderById(state.libFolder);
+  openFolder(f ? validFolder(f.parentId) : null);
+};
+applyLibSide();
+
+/* Suche */
+function openSearch() {
+  $('#search-wrap').hidden = false;
+  $('#search').focus();
+}
+function closeSearch(render = true) {
+  if ($('#search-wrap').hidden) return;
+  $('#search').value = '';
+  $('#search-wrap').hidden = true;
+  if (render) renderLibrary();
+}
+$('#btn-search').onclick = openSearch;
+$('#btn-search-close').onclick = () => closeSearch();
+$('#search').addEventListener('input', () => renderLibrary());
+$('#search').addEventListener('keydown', (e) => { if (e.key === 'Escape') closeSearch(); });
+
+/* Filter, Ansicht, Cloud */
+$('#lib-filter').onclick = (e) => openMenu(e.currentTarget, Object.entries(TYPE_FILTERS).map(([k, label]) => ({
+  label, icon: k === 'pdf' ? 'pdf' : k === 'notebook' ? 'page' : 'gridView', check: state.libFilter === k,
+  action: () => { state.libFilter = k; renderLibrary(); },
+})));
+$('#btn-layout').onclick = () => {
+  state.libLayout = state.libLayout === 'list' ? 'grid' : 'list';
+  try { localStorage.setItem('jelly.libLayout', state.libLayout); } catch { /* */ }
+  renderLibrary();
+};
+$('#btn-empty-trash').onclick = emptyTrash;
+$('#btn-cloud').onclick = showCloudBackup;
+function updateCloudIcon() {
+  const on = !!auth.user;
+  const b = $('#btn-cloud');
+  b.innerHTML = icon(on ? 'cloud' : 'cloudOff');
+  b.title = on ? 'Mit deinem Konto synchronisiert' : 'Nur auf diesem Gerät gespeichert';
+  b.classList.toggle('on', on);
+}
+
+/* Glocke: Neuigkeiten */
+function newsSeen() { try { return +localStorage.getItem('jelly.newsSeen') || 0; } catch { return 0; } }
+function updateBell() { $('#bell-dot').hidden = newsSeen() >= NEWS_VERSION; }
+$('#btn-bell').onclick = (e) => {
+  const el = document.createElement('div');
+  el.className = 'news';
+  el.innerHTML = `<div class="menu-title">Neuigkeiten</div>` + NEWS.map((n) => `
+    <div class="news-item"><span class="news-dot"></span><div><b>${esc(n.title)}</b><p>${esc(n.text)}</p></div></div>`).join('');
+  openMenu(e.currentTarget, el, 'news-menu');
+  try { localStorage.setItem('jelly.newsSeen', String(NEWS_VERSION)); } catch { /* */ }
+  updateBell();
+};
+updateBell();
+
+/* Profil */
+function profileName() { return auth.user?.email ? auth.user.email.split('@')[0] : 'Lokales Profil'; }
+function updateAvatar() {
+  const a = $('#btn-avatar');
+  a.textContent = auth.user?.email ? auth.user.email[0].toUpperCase() : 'J';
+  updateCloudIcon();
+}
+$('#btn-avatar').onclick = (e) => {
+  const el = document.createElement('div');
+  el.className = 'acct';
+  const user = auth.user;
+  el.innerHTML = `
+    <div class="acct-card">
+      <div class="acct-row">
+        <span class="avatar lg">${esc(user?.email ? user.email[0].toUpperCase() : 'J')}</span>
+        <div class="acct-who"><div class="acct-name">${esc(profileName())}</div><span class="acct-badge">${user ? 'Mit Konto synchronisiert' : 'Nur auf diesem Gerät'}</span></div>
+        <button class="acct-link" data-a="account" type="button">Zum Konto</button>
+      </div>
+      ${cloudConfigured && !user ? '<div class="acct-sep"></div><button class="acct-signin" data-a="signin" type="button">Anmelden oder Konto erstellen</button>' : ''}
+    </div>
+    <div class="acct-group">
+      <button class="acct-item" data-a="settings" type="button">${icon('settings')}<span>Einstellungen</span></button>
+      <button class="acct-item" data-a="cloud" type="button">${icon('cloud')}<span>Cloud &amp; Backup</span></button>
+      <button class="acct-item" data-a="trash" type="button">${icon('trash')}<span>Papierkorb</span></button>
+    </div>
+    <div class="acct-group">
+      <button class="acct-item" data-a="about" type="button">${icon('about')}<span>Über</span></button>
+    </div>
+    <div class="acct-group">
+      <button class="acct-item" data-a="privacy" type="button">${icon('shield')}<span>Datenschutzrichtlinie</span>${icon('chevRight')}</button>
+      <button class="acct-item" data-a="terms" type="button">${icon('doc')}<span>Nutzungsbedingungen</span>${icon('chevRight')}</button>
+      <button class="acct-item" data-a="imprint" type="button">${icon('info')}<span>Impressum</span>${icon('chevRight')}</button>
+    </div>`;
+  el.addEventListener('click', (ev) => {
+    const b = ev.target.closest('[data-a]');
+    if (!b) return;
+    closeMenu();
+    const a = b.dataset.a;
+    if (a === 'account') showAccount();
+    else if (a === 'signin') showAuth('signin');
+    else if (a === 'settings') showSettings();
+    else if (a === 'cloud') showCloudBackup();
+    else if (a === 'trash') setLibView('trash');
+    else if (a === 'about') showAbout();
+    else showInfo(LEGAL[a].title, LEGAL[a].html);
+  });
+  openMenu(e.currentTarget, el, 'acct-menu');
+};
+
+/** Zeigt eine Info-Seite (Text oder Element) im großen Dialog. */
+function showInfo(title, content) {
+  const dlg = $('#dlg-info');
+  $('#info-title').textContent = title;
+  const body = $('#info-body');
+  body.innerHTML = '';
+  if (typeof content === 'string') body.innerHTML = content;
+  else body.appendChild(content);
+  if (!dlg.open) dlg.showModal();
+  body.scrollTop = 0;
+}
+
+function showAccount() {
+  const el = document.createElement('div');
+  if (auth.user) {
+    el.innerHTML = `<p>Angemeldet als <b>${esc(auth.user.email)}</b>.</p>
+      <p>Deine Notizbücher, PDFs und Ordner werden automatisch in deinem Konto gespeichert und sind auf allen Geräten verfügbar, auf denen du dich anmeldest.</p>
+      <div class="info-actions"><button class="btn danger" type="button" data-out>Abmelden</button></div>`;
+    el.querySelector('[data-out]').onclick = () => { $('#dlg-info').close(); signOut(); };
+  } else {
+    el.innerHTML = `<p>Du nutzt Jelly Notes gerade ohne Konto. Alles, was du anlegst, wird nur in diesem Browser auf diesem Gerät gespeichert.</p>
+      <p>${cloudConfigured ? 'Mit einem Konto sind deine Notizen auf allen Geräten verfügbar.' : 'Benutzerkonten sind für diese Website noch nicht eingerichtet. Sichere deine Notizen deshalb regelmäßig über <b>Cloud &amp; Backup</b>.'}</p>
+      ${cloudConfigured ? '<div class="info-actions"><button class="btn primary" type="button" data-in>Anmelden oder Konto erstellen</button></div>' : ''}`;
+    el.querySelector('[data-in]')?.addEventListener('click', () => { $('#dlg-info').close(); showAuth('signin'); });
+  }
+  showInfo('Konto', el);
+}
+
+/* Einstellungen */
+function getTheme() { try { return localStorage.getItem('jelly.theme') || 'system'; } catch { return 'system'; } }
+function applyTheme(v = getTheme()) {
+  if (v === 'system') document.documentElement.removeAttribute('data-theme');
+  else document.documentElement.dataset.theme = v;
+}
+applyTheme();
+function settingSwitch(label, hint, value, onChange) {
+  const row = document.createElement('label');
+  row.className = 'set-row';
+  row.innerHTML = `<div class="set-txt"><b>${label}</b><span>${hint}</span></div><input type="checkbox" class="switch" ${value ? 'checked' : ''}>`;
+  row.querySelector('input').onchange = (e) => onChange(e.target.checked);
+  return row;
+}
+function showSettings() {
+  const el = document.createElement('div');
+  el.className = 'settings';
+  const theme = document.createElement('div');
+  theme.className = 'set-row';
+  theme.innerHTML = '<div class="set-txt"><b>Darstellung</b><span>Hell, dunkel oder wie beim Gerät</span></div><div class="seg"></div>';
+  buildSeg(theme.querySelector('.seg'), [['system', 'System'], ['light', 'Hell'], ['dark', 'Dunkel']], getTheme(), (v) => {
+    try { localStorage.setItem('jelly.theme', v); } catch { /* */ }
+    applyTheme(v);
+  });
+  el.append(
+    theme,
+    settingSwitch('Nur Stift zeichnet', 'Finger scrollen und zoomen, nur der Stift schreibt (gegen versehentliche Striche mit der Hand)', state.penOnly, (v) => { state.penOnly = v; savePrefs(); }),
+    settingSwitch('Seitenübersicht im Notizbuch', 'Miniaturen der Seiten links im Editor anzeigen', state.sidebar, (v) => { state.sidebar = v; savePrefs(); }),
+    settingSwitch('Seitenleiste in der Bibliothek', 'Dokumente, Favoriten und Geteilt links anzeigen', getLibSidePref(), (v) => { try { localStorage.setItem('jelly.libSide', v ? '1' : '0'); } catch { /* */ } applyLibSide(); }),
+  );
+  showInfo('Einstellungen', el);
+}
+
+/* Cloud & Backup */
+function showCloudBackup() {
+  const el = document.createElement('div');
+  const on = !!auth.user;
+  el.innerHTML = `
+    <div class="cloud-card ${on ? 'on' : ''}">${icon(on ? 'cloud' : 'cloudOff')}<div>
+      <b>${on ? 'Mit deinem Konto synchronisiert' : 'Nur auf diesem Gerät gespeichert'}</b>
+      <p>${on ? `Änderungen werden automatisch im Konto ${esc(auth.user.email)} gespeichert.` : 'Deine Notizen liegen nur in diesem Browser. Wenn du die Website-Daten löschst, sind sie weg – erstelle deshalb regelmäßig ein Backup.'}</p>
+    </div></div>
+    <div class="set-row"><div class="set-txt"><b>Gesamte Bibliothek sichern</b><span>Alle Notizbücher, PDFs und Ordner in einer Datei (.json)</span></div><button class="btn primary small" type="button" data-exp>Sichern</button></div>
+    <div class="set-row"><div class="set-txt"><b>Backup laden</b><span>Eine Sicherung oder ein einzelnes Notizbuch wiederherstellen</span></div><button class="btn small" type="button" data-imp>Laden</button></div>`;
+  el.querySelector('[data-exp]').onclick = exportLibrary;
+  el.querySelector('[data-imp]').onclick = () => { $('#dlg-info').close(); $('#file-backup').click(); };
+  showInfo('Cloud & Backup', el);
+}
+
+/* Über */
+function showAbout() {
+  showInfo('Über Jelly Notes', `
+    <div class="about-head"><img src="icon.svg" alt="" width="72" height="72"><div><b>Jelly Notes</b><span>Version ${APP_VERSION}</span></div></div>
+    <p>Handschriftliche Notizen, PDFs und Scans – direkt im Browser, auf dem iPad auch als App vom Home-Bildschirm.</p>
+    <p>Schreiben mit Drucksensitivität, Textmarker, Lasso, Formen, Text und Bilder, Ordner, Favoriten und Papierkorb. Funktioniert auch offline.</p>
+    <h3>Verwendete Bibliotheken</h3>
+    <p>pdf.js (Apache 2.0), jsPDF (MIT), supabase-js (MIT), Schrift Bricolage Grotesque (SIL Open Font License).</p>`);
+}
+
+/* Gesamte Bibliothek sichern */
+async function exportLibrary() {
+  try {
+    toast('Sicherung wird erstellt …', 0);
+    const metas = await db.listMeta();
+    const fl = await db.listFolders();
+    const notebooks = [];
+    for (const m of metas) {
+      if (m.trashed) continue;
+      const nb = await db.loadNotebook(m.id);
+      if (nb) notebooks.push(nb);
+    }
+    const data = JSON.stringify({ format: 'jelly-library', version: 1, exportedAt: Date.now(), folders: fl.filter((f) => !f.trashed), notebooks });
+    const day = new Intl.DateTimeFormat('de-DE').format(new Date()).replace(/\./g, '-');
+    download(new Blob([data], { type: 'application/json' }), `Jelly Notes Backup ${day}.json`);
+    toast(`${notebooks.length} ${notebooks.length === 1 ? 'Dokument' : 'Dokumente'} gesichert`);
+  } catch (err) {
+    console.error(err);
+    toast('Sicherung fehlgeschlagen: ' + (err?.message || err), 5000);
+  }
+}
+
+/* =====================================================================
    Start
    ===================================================================== */
+/** Ordner, in dem neue Dokumente landen (nur in der Ansicht „Dokumente“). */
+function targetFolder() { return state.libView === 'docs' ? state.libFolder : null; }
+
 async function startApp() {
+  updateAvatar();
   const m = location.hash.match(/^#nb=([\w-]+)$/);
   if (m) return openNotebook(m[1]);
   const metas = await db.listMeta();
@@ -2541,7 +2905,7 @@ function showAuth(mode = 'signin', msg = '', ok = false) {
 }
 async function enterAccount() {
   db = cloud;
-  $('#btn-account').hidden = false;
+  updateAvatar();
   $('#auth').classList.add('hidden');
   try { await startApp(); } catch (err) {
     console.error(err);
@@ -2598,11 +2962,7 @@ $('#auth-form').addEventListener('submit', async (e) => {
     btn.disabled = false;
   }
 });
-$('#btn-account').onclick = (e) => openMenu(e.currentTarget, [
-  { label: auth.user?.email || 'Konto', icon: 'user', action: () => {} },
-  '-',
-  { label: 'Abmelden', icon: 'logout', action: signOut },
-]);
+
 
 async function init() {
   if (!cloudConfigured) return startApp();
@@ -2638,7 +2998,7 @@ if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
 // Erkennt neue Versionen auf dem Server (z.B. nach einem Push auf GitHub)
 // anhand von ETag/Last-Modified und lädt die App dann neu. Funktioniert ohne
 // Versionsnummern, die man von Hand hochzählen müsste.
-const UPDATE_FILES = ['./', 'app.js', 'style.css', 'db.js', 'cloud.js', 'scan.js'];
+const UPDATE_FILES = ['./', 'app.js', 'style.css', 'db.js', 'cloud.js', 'scan.js', 'legal.js'];
 let versionSig = null;
 let updating = false;
 async function serverSignature() {
