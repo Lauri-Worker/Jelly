@@ -4186,6 +4186,7 @@ function getTheme() { try { return localStorage.getItem('jelly.theme') || 'syste
 function applyTheme(v = getTheme()) {
   if (v === 'system') document.documentElement.removeAttribute('data-theme');
   else document.documentElement.dataset.theme = v;
+  if (typeof syncStatusBar === 'function') setTimeout(syncStatusBar);
 }
 applyTheme();
 function settingSwitch(label, hint, value, onChange) {
@@ -4261,6 +4262,19 @@ async function exportLibrary() {
     toast('Sicherung fehlgeschlagen: ' + (err?.message || err), 5000);
   }
 }
+
+/* Statusleiste (Uhrzeit/Akku) passend einfärben: blau im Notizbuch, sonst Bibliotheksfarbe */
+function syncStatusBar() {
+  const meta = document.getElementById('meta-theme');
+  if (!meta) return;
+  const inEditor = !$('#editor').classList.contains('hidden');
+  const css = getComputedStyle(document.documentElement);
+  const c = (inEditor ? css.getPropertyValue('--ed-tabbar') : css.getPropertyValue('--lib-bg')).trim();
+  if (c && meta.content !== c) meta.content = c;
+}
+new MutationObserver(syncStatusBar).observe($('#editor'), { attributes: true, attributeFilter: ['class'] });
+window.matchMedia?.('(prefers-color-scheme: dark)').addEventListener?.('change', syncStatusBar);
+syncStatusBar();
 
 /* =====================================================================
    Start
