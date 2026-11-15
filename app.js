@@ -1955,8 +1955,46 @@ function setTool(t) {
 const TEXT_SIZE_LIST = [10, 12, 14, 16, 18, 20, 24, 28, 32, 40, 48, 64, 72];
 const LASER_COLORS = ['#ff3b30', '#2f6bff', '#22c55e'];
 function paletteFor(t) {
+  // Eigene Palette des Werkzeugs (Farben lassen sich einzeln austauschen)
+  if (state.tools[t]?.palette) return state.tools[t].palette;
   return t === 'highlighter' ? HL_COLORS : t === 'note' ? NOTE_COLORS : t === 'laser' ? LASER_COLORS : t === 'tape' ? TAPE_COLORS : PEN_COLORS;
 }
+const COLOR_GRID = [
+  '#000000', '#3a3a3c', '#636366', '#8e8e93', '#c7c7cc', '#ffffff',
+  '#7a1e1e', '#d0312d', '#ff6b6b', '#ff9f9f', '#f5a3c7', '#9b2d6f',
+  '#a0640a', '#ef7d22', '#ffb352', '#f5c518', '#ffe34d', '#fff3a3',
+  '#1b5e20', '#1e9e5a', '#3fc44f', '#8be38f', '#b9f0a5', '#a8ece6',
+  '#0d3b66', '#1f5fbf', '#4aa8ff', '#80cbff', '#cfe2ff', '#5b62c9',
+  '#4a148c', '#8e44ad', '#b388ff', '#e3d4ff', '#c4a0f5', '#795548',
+];
+/** Farbauswahl für die aktive Farbe: ersetzt die Farbe an dieser Stelle der Leiste. */
+function openColorEditor(anchor, t) {
+  const cfg = state.tools[t];
+  const pal = [...paletteFor(t)];
+  const idx = Math.max(0, pal.indexOf(cfg.color));
+  const apply = (c) => {
+    pal[idx] = c;
+    cfg.palette = pal;
+    cfg.color = c;
+    if (t === 'text') applyTextCfgToEditing();
+    savePrefs();
+    renderOptions();
+  };
+  const el = document.createElement('div');
+  el.className = 'color-editor';
+  el.innerHTML = `<div class="menu-title">Farbe ändern</div>
+    <div class="ce-grid">${COLOR_GRID.map((c) => `<button type="button" class="ce-sw ${c.toLowerCase() === cfg.color.toLowerCase() ? 'active' : ''}" style="--c:${c}" data-c="${c}" aria-label="${c}"></button>`).join('')}</div>
+    <div class="ce-row"><label class="ce-custom"><span class="ce-wheel"></span><span>Eigene Farbe</span><input type="color" value="${cfg.color}"></label>
+    <button type="button" class="link ce-reset">Standardfarben</button></div>`;
+  el.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-c]');
+    if (b) { apply(b.dataset.c); closeMenu(); return; }
+    if (e.target.closest('.ce-reset')) { delete cfg.palette; cfg.color = paletteFor(t)[0]; savePrefs(); renderOptions(); closeMenu(); }
+  });
+  el.querySelector('input').addEventListener('input', (e) => apply(e.target.value));
+  openMenu(anchor, el, 'ce-menu');
+}
+
 /** Wendet geänderte Textoptionen auch auf das gerade bearbeitete Textfeld an. */
 function applyTextCfgToEditing() {
   if (!editing || editing.item.type !== 'text') return;
@@ -2066,7 +2104,7 @@ $('#options').addEventListener('click', (e) => {
     openMenu(b, el, 'color-menu');
     return;
   }
-  if (b.dataset.color && b.dataset.color === cfg.color && t !== 'note') { $('#options input[type=color]')?.click(); return; }
+  if (b.dataset.color && b.dataset.color === cfg.color && t !== 'note') { openColorEditor(b, t); return; }
   if (b.dataset.color) cfg.color = b.dataset.color;
   else if (b.dataset.width) cfg.width = +b.dataset.width;
   else if (b.dataset.size) cfg.size = +b.dataset.size;
