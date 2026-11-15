@@ -81,6 +81,7 @@ const ICONS = {
   shapeRec: '<path d="M4 17c2-6 5-9 8-9s5 2 8 0" stroke-dasharray="2 2.5"/><circle cx="7" cy="7" r="3"/><rect x="14" y="13" width="6" height="6" rx="1"/>',
   pen_fountain: '<path d="M12 21v-5"/><path d="M12 16 8 9l4-6 4 6z"/><circle cx="12" cy="10" r="1"/>',
   pen_ball: '<path d="M7 21 17 5"/><path d="m15 3 3 2-1.5 2.5-3-2z"/><path d="M7 21l.5-3 2 1.2z" fill="currentColor"/>',
+  pen_pencil: '<path d="M4 20l3-1L19 7a2 2 0 0 0-3-3L4 16z"/><path d="m14 6 4 4"/><path d="M4 20l1.2-3.4 2.2 2.2z" fill="currentColor"/>',
   pen_brush: '<path d="M19 3c-4 3-7 7-8 10l2 2c3-1 7-4 10-8"/><path d="M11 13c-2 0-4 1-4 4 0 1.5-1 3-3 3 3 1 7 1 8-3z"/>',
   play: '<path d="M8 5v14l11-7z" fill="currentColor"/>',
   pause: '<rect x="7" y="5" width="3.5" height="14" rx="1" fill="currentColor"/><rect x="13.5" y="5" width="3.5" height="14" rx="1" fill="currentColor"/>',
@@ -397,7 +398,7 @@ function drawPaper(ctx, page, nb = state.nb) {
 
 const pf = (p) => 0.35 + p * 1.3; // Druck -> Breitenfaktor (0.5 => 1.0)
 const pfBrush = (p) => 0.12 + p * 1.76; // Pinsel: stärkerer Druckeffekt
-const PEN_TYPES = [['fountain', 'Füller'], ['ball', 'Kugelschreiber'], ['brush', 'Pinsel']];
+const PEN_TYPES = [['fountain', 'Füller'], ['ball', 'Kugelschreiber'], ['brush', 'Pinsel'], ['pencil', 'Buntstift']];
 const FONTS = {
   sans: ['Standard', FONT],
   serif: ['Serif', 'Georgia, "Times New Roman", serif'],
@@ -462,6 +463,96 @@ function drawTape(ctx, s) {
   }
 }
 
+/* ---------- Stiftarten ---------- */
+/** Zeichnet eine geglättete Linie, deren Breite pro Punkt vorgegeben ist. */
+function drawVarStroke(ctx, P, W) {
+  const n = P.length;
+  if (n === 2) { ctx.lineWidth = (W[0] + W[1]) / 2; tracePath(ctx, P); ctx.stroke(); return; }
+  let px = P[0][0], py = P[0][1];
+  for (let i = 1; i < n - 1; i++) {
+    const mx = (P[i][0] + P[i + 1][0]) / 2, my = (P[i][1] + P[i + 1][1]) / 2;
+    ctx.beginPath();
+    ctx.moveTo(px, py);
+    ctx.quadraticCurveTo(P[i][0], P[i][1], mx, my);
+    ctx.lineWidth = W[i];
+    ctx.stroke();
+    px = mx; py = my;
+  }
+  ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(P[n - 1][0], P[n - 1][1]);
+  ctx.lineWidth = W[n - 1];
+  ctx.stroke();
+}
+const smoothArr = (a, k = 0.35) => { for (let i = 1; i < a.length; i++) a[i] = a[i - 1] + (a[i] - a[i - 1]) * k; return a; };
+/** Füller: schräge Feder (45°) – Breite hängt von der Schreibrichtung ab, dazu der Druck. */
+function fountainWidths(s) {
+  const P = s.points, n = P.length, nib = -Math.PI / 4;
+  const W = P.map((p, i) => {
+    const a = P[Math.max(0, i - 1)], b = P[Math.min(n - 1, i + 1)];
+    const dir = Math.atan2(b[1] - a[1], b[0] - a[0]);
+    return s.width * pf(p[2]) * (0.3 + 1.15 * Math.abs(Math.sin(dir - nib)));
+  });
+  return smoothArr(W, 0.45);
+}
+/** Pinsel: langsam = breit, schnell = schmal, spitz zulaufende Enden, starker Druckeffekt. */
+function brushWidths(s) {
+  const P = s.points, n = P.length;
+  const W = P.map((p, i) => {
+    const d = i ? Math.hypot(p[0] - P[i - 1][0], p[1] - P[i - 1][1]) : 0;
+    const speed = clamp(2.1 - d * 0.16, 0.45, 2.1);
+    const taper = Math.min(1, Math.min(i, n - 1 - i) / 7);
+    return s.width * 1.5 * pfBrush(p[2]) * speed * (0.18 + 0.82 * taper);
+  });
+  return smoothArr(W, 0.3);
+}
+/** Buntstift: körnige Struktur mit rauen Rändern. */
+const grainTiles = new Map();
+function grainTile(color) {
+  let t = grainTiles.get(color);
+  if (!t) {
+    t = document.createElement('canvas');
+    t.width = t.height = 48;
+    const x = t.getContext('2d');
+    const img = x.createImageData(48, 48);
+    const m = /^#?([0-9a-f]{6})$/i.exec(color);
+    const n = m ? parseInt(m[1], 16) : 0;
+    const r = n >> 16, g = (n >> 8) & 255, bl = n & 255;
+    let seed = 7;
+    const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+    for (let i = 0; i < 48 * 48; i++) {
+      const v = rnd();
+      img.data[i * 4] = r; img.data[i * 4 + 1] = g; img.data[i * 4 + 2] = bl;
+      img.data[i * 4 + 3] = v < 0.32 ? 0 : Math.round(150 + v * 105);
+    }
+    x.putImageData(img, 0, 0);
+    grainTiles.set(color, t);
+  }
+  return t;
+}
+function drawPencil(ctx, s) {
+  const P = s.points, n = P.length;
+  const pat = ctx.createPattern(grainTile(s.color), 'repeat');
+  if (pat?.setTransform) pat.setTransform(new DOMMatrix().scale(0.5));
+  ctx.strokeStyle = pat || s.color;
+  ctx.fillStyle = pat || s.color;
+  const avgP = P.reduce((a, p) => a + p[2], 0) / n;
+  ctx.globalAlpha = 0.6 + 0.4 * Math.min(1, avgP * 1.4);
+  const w = s.width * 1.35;
+  if (n === 1) { ctx.beginPath(); ctx.arc(P[0][0], P[0][1], w / 2, 0, Math.PI * 2); ctx.fill(); return; }
+  ctx.lineWidth = w;
+  tracePath(ctx, P);
+  ctx.stroke();
+  // raue Ränder: zwei leicht versetzte, dünnere Durchgänge
+  let seed = 0;
+  for (const ch of s.id || 'x') seed = (seed * 31 + ch.charCodeAt(0)) % 997;
+  for (const [ox, oy, a] of [[0.28, -0.22, 0.45], [-0.25, 0.3, 0.35]]) {
+    const jit = P.map((p, i) => [p[0] + w * ox * Math.sin(i * 1.7 + seed), p[1] + w * oy * Math.cos(i * 1.3 + seed), p[2]]);
+    ctx.globalAlpha *= a / 0.6 > 1 ? 1 : a / 0.6;
+    ctx.lineWidth = w * 0.55;
+    tracePath(ctx, jit);
+    ctx.stroke();
+  }
+}
+
 function drawStroke(ctx, s, dark = false) {
   const P = s.points, n = P.length;
   if (!n) return;
@@ -479,10 +570,16 @@ function drawStroke(ctx, s, dark = false) {
     if (n === 1) { ctx.beginPath(); ctx.arc(P[0][0], P[0][1], s.width / 2, 0, Math.PI * 2); ctx.fill(); }
     else { tracePath(ctx, P); ctx.stroke(); }
   } else if (s.pen === 'ball' && !s.straight) {
-    // Kugelschreiber: gleichmäßige Linie ohne Druck
-    ctx.lineWidth = s.width;
-    if (n === 1) { ctx.beginPath(); ctx.arc(P[0][0], P[0][1], s.width / 2, 0, Math.PI * 2); ctx.fill(); }
+    // Kugelschreiber: gleichmäßig dünn und scharf, unabhängig vom Druck
+    ctx.lineWidth = Math.max(0.6, s.width * 0.75);
+    if (n === 1) { ctx.beginPath(); ctx.arc(P[0][0], P[0][1], ctx.lineWidth / 2, 0, Math.PI * 2); ctx.fill(); }
     else { tracePath(ctx, P); ctx.stroke(); }
+  } else if (s.pen === 'fountain' && !s.straight && n > 1) {
+    drawVarStroke(ctx, P, fountainWidths(s));
+  } else if (s.pen === 'brush' && !s.straight && n > 1) {
+    drawVarStroke(ctx, P, brushWidths(s));
+  } else if (s.pen === 'pencil' && !s.straight) {
+    drawPencil(ctx, s);
   } else if (s.straight) {
     ctx.lineWidth = s.width;
     ctx.beginPath();
@@ -1749,10 +1846,20 @@ function updateCurrent() {
   }
 }
 viewer.addEventListener('scroll', () => { if (!curRaf) curRaf = requestAnimationFrame(updateCurrent); }, { passive: true });
+let wheelZoom = null;
 viewer.addEventListener('wheel', (e) => {
   if (!e.ctrlKey && !e.metaKey) return;
   e.preventDefault();
-  setZoom(state.zoom * Math.exp(-e.deltaY * 0.0025), e.clientX, e.clientY);
+  if (!wheelZoom) {
+    wheelZoom = { f: 1, x: e.clientX, y: e.clientY };
+    requestAnimationFrame(() => {
+      const w = wheelZoom;
+      wheelZoom = null;
+      setZoom(state.zoom * w.f, w.x, w.y);
+    });
+  }
+  wheelZoom.f *= Math.exp(-e.deltaY * 0.0025);
+  wheelZoom.x = e.clientX; wheelZoom.y = e.clientY;
 }, { passive: false });
 window.addEventListener('resize', () => {
   if (!state.nb || !state.fit) return;
@@ -2128,11 +2235,7 @@ function endPointer(e) {
   if (e.pointerType === 'touch') {
     touches.delete(e.pointerId);
     if (pinch) {
-      if (touches.size < 2) {
-        const vx = performance.now() - (pinch.t || 0) > 120 ? 0 : pinch.vx || 0;
-        pinch = null;
-        snapPage(vx);
-      }
+      if (touches.size < 2) finishPinch();
       return;
     }
   }
@@ -2219,11 +2322,28 @@ function abortAction() {
 /* ---------- Zwei-Finger-Gesten ---------- */
 function startPinch() {
   const [a, b] = [...touches.values()];
+  const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+  const pr = pagesEl.getBoundingClientRect();
   pinch = {
     d0: Math.hypot(a.x - b.x, a.y - b.y) || 1,
-    z0: state.zoom,
-    mx: (a.x + b.x) / 2, my: (a.y + b.y) / 2,
+    z0: state.zoom, z: state.zoom,
+    mx0: mx, my0: my, mx, my,
   };
+  // Während der Geste nur skalieren (flüssig, ohne Neuzeichnen); scharf gezeichnet wird beim Loslassen
+  pagesEl.style.transformOrigin = `${mx - pr.left}px ${my - pr.top}px`;
+  pagesEl.style.willChange = 'transform';
+}
+function finishPinch() {
+  const p = pinch;
+  pinch = null;
+  pagesEl.style.transform = '';
+  pagesEl.style.willChange = '';
+  if (!p) return;
+  if (Math.abs(p.z - p.z0) > 0.002) setZoom(p.z, p.mx0, p.my0);
+  viewer.scrollLeft -= p.mx - p.mx0;
+  viewer.scrollTop -= p.my - p.my0;
+  const vx = performance.now() - (p.t || 0) > 120 ? 0 : p.vx || 0;
+  snapPage(vx);
 }
 function movePinch() {
   const [a, b] = [...touches.values()];
@@ -2233,18 +2353,18 @@ function movePinch() {
   const now = performance.now(), dt = Math.max(1, now - (pinch.t || now - 16));
   pinch.vx = 0.7 * (pinch.vx || 0) + 0.3 * ((mx - pinch.mx) / dt);
   pinch.t = now;
-  viewer.scrollLeft -= mx - pinch.mx;
-  viewer.scrollTop -= my - pinch.my;
   pinch.mx = mx; pinch.my = my;
-  const z = pinch.z0 * d / pinch.d0;
-  if (Math.abs(z - state.zoom) > 0.002) setZoom(z, mx, my);
+  let z = clamp(pinch.z0 * d / pinch.d0, 0.25, 5);
+  if (Math.abs(z - pinch.z0) < 0.03) z = pinch.z0; // reines Verschieben mit zwei Fingern
+  pinch.z = z;
+  pagesEl.style.transform = `translate(${mx - pinch.mx0}px, ${my - pinch.my0}px) scale(${z / pinch.z0})`;
 }
 
 /* ---------- Stift & Textmarker ---------- */
 function startStroke(v, e, tool) {
   const cfg = state.tools[tool];
   act = { type: 'stroke', id: e.pointerId, v, s: { id: uid(), tool, color: cfg.color, width: cfg.width, points: [] } };
-  if (tool === 'pen' && cfg.pen && cfg.pen !== 'fountain') act.s.pen = cfg.pen;
+  if (tool === 'pen') act.s.pen = cfg.pen || 'fountain';
   attachLive(v);
   const edge = !act.zp && rulerEdgeNear(e.clientX, e.clientY);
   if (edge) {
@@ -3804,7 +3924,7 @@ zpCanvas.addEventListener('pointerdown', (e) => {
     const t = tool === 'highlighter' ? 'highlighter' : 'pen';
     const cfg = state.tools[t];
     act = { type: 'stroke', id: e.pointerId, v, zp: true, s: { id: uid(), tool: t, color: cfg.color, width: cfg.width, points: [] } };
-    if (t === 'pen' && cfg.pen && cfg.pen !== 'fountain') act.s.pen = cfg.pen;
+    if (t === 'pen') act.s.pen = cfg.pen || 'fountain';
     addStrokePoints(e);
   }
 });

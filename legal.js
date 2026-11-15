@@ -2,10 +2,12 @@
 // WICHTIG: Das Impressum enthält Platzhalter in [eckigen Klammern]. Bitte mit den echten
 // Angaben der Person ersetzen, die die Website betreibt. Die Texte sind keine Rechtsberatung.
 
-export const APP_VERSION = '1.8';
+export const APP_VERSION = '1.9';
 
-export const NEWS_VERSION = 8;
+export const NEWS_VERSION = 9;
 export const NEWS = [
+  { title: 'Vier echte Stifte', text: 'Füller mit schräger Feder, gleichmäßiger Kugelschreiber, Pinsel mit spitzen Enden und ein neuer rauer Buntstift.' },
+  { title: 'Flüssiges Zoomen', text: 'Das Zoomen mit zwei Fingern läuft jetzt ruckelfrei, die Seite wird beim Loslassen scharf gezeichnet.' },
   { title: 'Zubehör', text: 'Tippe den Laserpointer nochmal an: Lineal, Zoom-Ansicht zum Schreiben in groß, Zeitmesser und Werkzeugleiste anpassen.' },
   { title: 'Mehr Formen', text: 'Dreieck, Raute, abgerundetes Rechteck, Winkel- und Bogenpfeil – oder Formen frei zeichnen und automatisch erkennen lassen.' },
   { title: 'Tape zum Lernen', text: 'Decke Begriffe mit farbigem Tape ab und tippe darauf, um sie aufzudecken – ideal zum Abfragen.' },
