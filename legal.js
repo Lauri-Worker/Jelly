@@ -2,10 +2,12 @@
 // WICHTIG: Das Impressum enthält Platzhalter in [eckigen Klammern]. Bitte mit den echten
 // Angaben der Person ersetzen, die die Website betreibt. Die Texte sind keine Rechtsberatung.
 
-export const APP_VERSION = '1.6';
+export const APP_VERSION = '1.7';
 
-export const NEWS_VERSION = 6;
+export const NEWS_VERSION = 7;
 export const NEWS = [
+  { title: 'Tape zum Lernen', text: 'Decke Begriffe mit farbigem Tape ab und tippe darauf, um sie aufzudecken – ideal zum Abfragen.' },
+  { title: 'Lasso-Werkzeug', text: 'Tippe das Lasso nochmal an: rechteckig oder freihand auswählen und festlegen, was mit ausgewählt wird.' },
   { title: 'Seiten wischen', text: 'Blättere mit dem Finger nach links und rechts durch deine Seiten – jede Seite füllt den Bildschirm. Fortlaufendes Scrollen gibt es weiter unter Ansicht.' },
   { title: 'Flüssige Animationen', text: 'Dokumente öffnen sich mit einer Zoom-Animation, Ordner gleiten herein, angetippte Elemente werden hervorgehoben.' },
   { title: 'Tabs für geöffnete Dokumente', text: 'Geöffnete Notizbücher bleiben oben als Tabs offen – antippen zum Wechseln, × zum Schließen.' },

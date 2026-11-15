@@ -1077,3 +1077,30 @@ canvas.live.laser { pointer-events: none; z-index: 2; }
 .page-ind.left { left: max(18px, env(safe-area-inset-left, 0px)); transform: none; }
 .editor-body.with-side .page-ind.left { left: 214px; }
 @media (max-width: 1100px) { #viewer.horizontal #pages { padding-top: 130px; } }
+
+/* ---------- Lasso-Panel, Stiftgruppe, Linien-Stärken ---------- */
+.lasso-chev { display: none !important; }
+.ed-toolbar .tool[data-tool="lasso"].active { width: 62px; gap: 1px; }
+.ed-toolbar .tool[data-tool="lasso"].active .lasso-chev { display: inline-flex !important; }
+.lasso-chev .ic { width: 14px !important; height: 14px !important; stroke-width: 2.2 !important; }
+.menu.lasso-menu { width: min(400px, calc(100vw - 16px)); padding: 18px 16px 16px; background: var(--surface-2); }
+.lp-title { text-align: center; font: 700 19px/1.2 var(--font-display); letter-spacing: -.01em; margin-bottom: 18px; }
+.lp-sub { color: var(--text-2); font-size: 17px; font-weight: 550; margin: 4px 6px 12px; }
+.lp-modes { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+.lp-mode {
+  display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 22px 10px; border: 0;
+  border-radius: 20px; background: transparent; font-size: 15px; color: var(--text);
+}
+.lp-mode .ic { width: 32px; height: 32px; }
+.lp-mode.active { background: var(--surface); box-shadow: var(--shadow-sm); }
+.lp-mode.active .ic { color: var(--accent); }
+.lp-list { background: var(--surface); border-radius: 20px; border: 1px solid var(--line); padding: 0 16px; }
+.lp-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 13px 0; font-size: 17px; cursor: pointer; }
+.lp-row + .lp-row { border-top: 1px solid var(--line); }
+
+.tool-group { display: inline-flex; align-items: center; gap: 2px; }
+.opt-drop.active-drop { background: var(--accent-soft); color: var(--accent); height: 38px; padding: 0 8px 0 10px; }
+.opt-drop.active-drop .ic:first-child { width: 22px; height: 22px; }
+.wbtn-line { width: 42px; }
+.wline { display: block; width: 24px; border-radius: 4px; background: currentColor; }
+.wbtn-line.active { background: var(--surface-3); color: var(--text); }

@@ -14,9 +14,10 @@ const FONT = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, 
 const PAPERS = [['blank', 'Blanko'], ['lined', 'Liniert'], ['grid', 'Kariert'], ['dots', 'Gepunktet'], ['cornell', 'Cornell']];
 const PAPER_COLORS = { white: ['#ffffff', 'Weiß'], cream: ['#fbf5e6', 'Creme'], dark: ['#26272b', 'Dunkel'] };
 const COVERS = ['#d9534f', '#ef8a3c', '#e9c046', '#4fae6a', '#3a9bd1', '#5b62c9', '#9b59c9', '#3b3d45'];
-const PEN_COLORS = ['#1d1d1f', '#1f5fbf', '#d0312d', '#1e9e5a', '#ef7d22', '#8e44ad'];
+const PEN_COLORS = ['#1d1d1f', '#4aa8ff', '#9b2d6f', '#3fc44f', '#a0640a', '#f5c518', '#e5484d'];
+const TAPE_COLORS = ['#f5a3c7', '#9fd3ff', '#ffd66b', '#b5e5a2', '#c9b6ff'];
 const HL_COLORS = ['#ffe34d', '#8be38f', '#80cbff', '#ff9ecf', '#ffb352'];
-const WIDTHS = { pen: [1.2, 2.2, 4], highlighter: [8, 14, 24], eraser: [8, 18, 36], shape: [1.2, 2.2, 4] };
+const WIDTHS = { pen: [1.2, 2.2, 4], highlighter: [8, 14, 24], eraser: [8, 18, 36], shape: [1.2, 2.2, 4], tape: [14, 22, 34] };
 const TEXT_SIZES = [14, 20, 30];
 const SHAPES = [['line', 'Linie'], ['arrow', 'Pfeil'], ['rect', 'Rechteck'], ['ellipse', 'Ellipse']];
 const JSPDF_URL = 'vendor/jspdf.umd.min.js';
@@ -81,6 +82,9 @@ const ICONS = {
   pen_brush: '<path d="M19 3c-4 3-7 7-8 10l2 2c3-1 7-4 10-8"/><path d="M11 13c-2 0-4 1-4 4 0 1.5-1 3-3 3 3 1 7 1 8-3z"/>',
   play: '<path d="M8 5v14l11-7z" fill="currentColor"/>',
   pause: '<rect x="7" y="5" width="3.5" height="14" rx="1" fill="currentColor"/><rect x="13.5" y="5" width="3.5" height="14" rx="1" fill="currentColor"/>',
+  tape: '<path d="M4 15 15 4l5 5L9 20z"/><path d="m4 15 1.5 1-.5 1.5L6.5 19 8 18.5 9 20"/><path d="m15 4 1 1.5 1.5-.5.5 1.5 1.5-.5L20 9" opacity=".6"/>',
+  rectSel: '<rect x="4" y="5" width="16" height="14" rx="2" stroke-dasharray="3 2.6"/>',
+  lassoFree: '<path d="M6 7c3-4 11-3 12 1s-3 6-7 6-7 1-6 4 5 2 5 2" stroke-dasharray="3 2.6"/>',
   share: '<path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><path d="m16 6-4-4-4 4"/><path d="M12 2v13"/>',
   page: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/>',
   file: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 15h6"/>',
@@ -204,6 +208,8 @@ const DEFAULT_PREFS = {
     text: { color: PEN_COLORS[0], size: 20, font: 'sans', bold: false, italic: false },
     note: { color: '#fff3a3', size: 16 },
     laser: { color: '#ff3b30' },
+    tape: { color: TAPE_COLORS[0], width: 22 },
+    lasso: { mode: 'free', inc: { ink: true, images: true, shapes: true, arrows: true, text: true, tape: true, notes: true } },
   },
 };
 function loadPrefs() {
@@ -212,6 +218,7 @@ function loadPrefs() {
     const s = JSON.parse(localStorage.getItem(PREFS_KEY) || '{}');
     Object.assign(p, { ...s, tools: p.tools });
     for (const k in p.tools) Object.assign(p.tools[k], s.tools?.[k] || {});
+    if (s.tools?.lasso?.inc) p.tools.lasso.inc = { ...DEFAULT_PREFS.tools.lasso.inc, ...s.tools.lasso.inc };
   } catch { /* ignorieren */ }
   return p;
 }
@@ -229,7 +236,7 @@ function savePrefs() {
 const prefs = loadPrefs();
 const state = {
   nb: null,
-  tool: ['pen', 'highlighter', 'eraser', 'lasso', 'shape', 'text', 'note', 'laser'].includes(prefs.tool) ? prefs.tool : 'pen',
+  tool: ['pen', 'highlighter', 'eraser', 'lasso', 'shape', 'text', 'note', 'laser', 'tape'].includes(prefs.tool) ? prefs.tool : 'pen',
   tools: prefs.tools,
   penOnly: prefs.penOnly,
   sidebar: prefs.sidebar,
@@ -391,6 +398,50 @@ function tracePath(ctx, P) {
   ctx.lineTo(L[0], L[1]);
 }
 
+/* Tape: deckt Inhalte ab; antippen deckt auf */
+const tapeTile = (() => {
+  const c = document.createElement('canvas');
+  c.width = c.height = 10;
+  const x = c.getContext('2d');
+  x.strokeStyle = 'rgba(255,255,255,.35)';
+  x.lineWidth = 3;
+  x.beginPath(); x.moveTo(-2, 12); x.lineTo(12, -2); x.stroke();
+  return c;
+})();
+function drawTape(ctx, s) {
+  const [a, b] = [s.points[0], s.points[s.points.length - 1]];
+  if (!a || !b) return;
+  const ang = Math.atan2(b[1] - a[1], b[0] - a[0]);
+  const len = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1;
+  const h = s.width;
+  ctx.translate(a[0], a[1]);
+  ctx.rotate(ang);
+  // gezackte Enden wie abgerissenes Klebeband
+  const zig = (x, dir) => { for (let i = 0; i <= 6; i++) ctx.lineTo(x + (i % 2 ? dir * 3 : 0), -h / 2 + (h * i) / 6); };
+  ctx.beginPath();
+  ctx.moveTo(0, -h / 2);
+  ctx.lineTo(len, -h / 2);
+  for (let i = 0; i <= 6; i++) ctx.lineTo(len + (i % 2 ? 3 : 0), -h / 2 + (h * i) / 6);
+  ctx.lineTo(0, h / 2);
+  for (let i = 6; i >= 0; i--) ctx.lineTo(i % 2 ? -3 : 0, -h / 2 + (h * i) / 6);
+  ctx.closePath();
+  if (s.hidden === false) {
+    ctx.globalAlpha = 0.18;
+    ctx.fill();
+    ctx.globalAlpha = 0.6;
+    ctx.setLineDash([4, 3]);
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  } else {
+    ctx.shadowColor = 'rgba(0,0,0,.15)';
+    ctx.shadowBlur = 3;
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = ctx.createPattern(tapeTile, 'repeat');
+    ctx.fill();
+  }
+}
+
 function drawStroke(ctx, s, dark = false) {
   const P = s.points, n = P.length;
   if (!n) return;
@@ -399,7 +450,9 @@ function drawStroke(ctx, s, dark = false) {
   ctx.lineJoin = 'round';
   ctx.strokeStyle = s.color;
   ctx.fillStyle = s.color;
-  if (s.tool === 'highlighter') {
+  if (s.tool === 'tape') {
+    drawTape(ctx, s);
+  } else if (s.tool === 'highlighter') {
     ctx.globalAlpha = dark ? 0.5 : 0.42;
     if (!dark) ctx.globalCompositeOperation = 'multiply';
     ctx.lineWidth = s.width;
@@ -518,9 +571,11 @@ function renderPage(ctx, page, opt = {}) {
   const dark = page.color === 'dark';
   drawPaper(ctx, page, nb);
   for (const it of page.items) if (it.type === 'image' && it.id !== opt.skip) drawItem(ctx, it, nb, dark);
-  for (const s of page.strokes) drawStroke(ctx, s, dark);
+  for (const s of page.strokes) if (s.tool !== 'tape') drawStroke(ctx, s, dark);
   for (const it of page.items) if (it.type === 'note' && it.id !== opt.skip) drawItem(ctx, it, nb, dark);
   for (const it of page.items) if (it.type === 'text' && it.id !== opt.skip) drawItem(ctx, it, nb, dark);
+  // Tape liegt immer obenauf, damit es auch getippten Text abdeckt
+  for (const s of page.strokes) if (s.tool === 'tape') drawStroke(ctx, s, dark);
 }
 
 /* =====================================================================
@@ -1711,7 +1766,7 @@ function setTool(t) {
   if (t !== 'lasso') clearSelection();
   closeTextEditor();
   state.tool = t;
-  for (const b of document.querySelectorAll('.tool[data-tool]')) b.classList.toggle('active', b.dataset.tool === t);
+  for (const b of document.querySelectorAll('.tool[data-tool]')) b.classList.toggle('active', b.dataset.tool === t || (t === 'tape' && b.dataset.tool === 'pen'));
   for (const v of views.values()) v.wrap.className = 'page t-' + t;
   renderOptions();
   savePrefs();
@@ -1720,7 +1775,7 @@ function setTool(t) {
 const TEXT_SIZE_LIST = [10, 12, 14, 16, 18, 20, 24, 28, 32, 40, 48, 64, 72];
 const LASER_COLORS = ['#ff3b30', '#2f6bff', '#22c55e'];
 function paletteFor(t) {
-  return t === 'highlighter' ? HL_COLORS : t === 'note' ? NOTE_COLORS : t === 'laser' ? LASER_COLORS : PEN_COLORS;
+  return t === 'highlighter' ? HL_COLORS : t === 'note' ? NOTE_COLORS : t === 'laser' ? LASER_COLORS : t === 'tape' ? TAPE_COLORS : PEN_COLORS;
 }
 /** Wendet geänderte Textoptionen auch auf das gerade bearbeitete Textfeld an. */
 function applyTextCfgToEditing() {
@@ -1730,15 +1785,31 @@ function applyTextCfgToEditing() {
   positionTextEditor();
   editing.fit?.();
 }
+function widthsHtml(t, cfg) {
+  return WIDTHS[t].map((w, i) => `<button class="wbtn wbtn-line ${cfg.width === w ? 'active' : ''}" data-width="${w}" title="Stärke ${i + 1}"><span class="wline" style="height:${[2, 4, 7][i]}px"></span></button>`).join('') + '<span class="opt-sep"></span>';
+}
 function renderOptions() {
   const t = state.tool, cfg = state.tools[t];
   const o = $('#options');
   let html = '';
+  if (['pen', 'highlighter', 'tape', 'shape'].includes(t)) {
+    const pc = state.tools.pen;
+    const cur = PEN_TYPES.find(([k]) => k === pc.pen) || PEN_TYPES[0];
+    html += '<div class="tool-group">';
+    html += t === 'pen'
+      ? `<button class="opt-drop active-drop" data-act="pentype" title="Stiftart: ${cur[1]}">${icon('pen_' + cur[0])}${icon('chev')}</button>`
+      : `<button class="wbtn" data-switch="pen" title="Stift">${icon('pen_' + cur[0])}</button>`;
+    html += `<button class="wbtn ${t === 'highlighter' ? 'active' : ''}" data-switch="highlighter" title="Textmarker">${icon('highlighter')}</button>`;
+    html += `<button class="wbtn ${t === 'tape' ? 'active' : ''}" data-switch="tape" title="Tape: Inhalte abdecken, antippen zum Aufdecken">${icon('tape')}</button>`;
+    html += `<button class="wbtn ${t === 'shape' ? 'active' : ''}" data-switch="shape" title="Formen">${icon('shapes')}</button>`;
+    html += '</div><span class="opt-sep"></span>';
+  }
   if (t === 'pen') {
-    const cur = PEN_TYPES.find(([k]) => k === cfg.pen) || PEN_TYPES[0];
-    html += `<button class="opt-drop" data-act="pentype" title="Stiftart">${icon('pen_' + cur[0])}<span>${cur[1]}</span>${icon('chev')}</button>`;
     html += `<button class="wbtn ${cfg.shapeRec ? 'active' : ''}" data-act="shaperec" title="Formerkennung: gezeichnete Linien, Kreise und Rechtecke werden begradigt">${icon('shapeRec')}</button>`;
     html += '<span class="opt-sep"></span>';
+  }
+  if (t === 'lasso') {
+    html += `<button class="opt-drop" data-act="lassopanel" title="Lasso-Werkzeug">${icon(state.tools.lasso.mode === 'rect' ? 'rectSel' : 'lassoFree')}<span>${state.tools.lasso.mode === 'rect' ? 'Rechteckig' : 'Freihand'}</span>${icon('chev')}</button>`;
   }
   if (t === 'shape') {
     html += SHAPES.map(([k, n]) => `<button class="wbtn ${cfg.kind === k ? 'active' : ''}" data-shape="${k}" title="${n}">${icon(k)}</button>`).join('');
@@ -1756,6 +1827,7 @@ function renderOptions() {
     html += [[14, 'Klein'], [16, 'Mittel'], [20, 'Groß']].map(([sz, n], i) => `<button class="wbtn ${cfg.size === sz ? 'active' : ''}" data-size="${sz}" title="Schrift ${n}"><span style="font-size:${[12, 15, 19][i]}px;font-weight:600">A</span></button>`).join('');
     html += '<span class="opt-sep"></span>';
   }
+  if (WIDTHS[t] && t !== 'eraser') { html += widthsHtml(t, cfg); }
   if (cfg && 'color' in cfg) {
     const colors = paletteFor(t);
     html += colors.map((c) => `<button class="swatch ${c === cfg.color ? 'active' : ''}" style="--c:${c}" data-color="${c}" title="${c}"></button>`).join('');
@@ -1764,16 +1836,20 @@ function renderOptions() {
       html += `<label class="swatch custom ${custom ? 'active' : ''}" title="Eigene Farbe" ${custom ? `style="background:${cfg.color}"` : ''}><input type="color" value="${cfg.color}"></label>`;
     }
   }
-  if (WIDTHS[t]) {
-    html += '<span class="opt-sep"></span>';
+  if (WIDTHS[t] && t === 'eraser') {
+    const line = false;
+    if (line) html += '<span class="opt-sep"></span>';
     html += WIDTHS[t].map((w, i) => {
       const d = [5, 9, 14][i];
-      return `<button class="wbtn ${cfg.width === w ? 'active' : ''}" data-width="${w}" title="Stärke ${i + 1}"><span class="dot" style="width:${d}px;height:${d}px"></span></button>`;
+      const inner = line ? `<span class="wline" style="height:${[2, 4, 7][i]}px"></span>` : `<span class="dot" style="width:${d}px;height:${d}px"></span>`;
+      return `<button class="wbtn ${line ? 'wbtn-line' : ''} ${cfg.width === w ? 'active' : ''}" data-width="${w}" title="Stärke ${i + 1}">${inner}</button>`;
     }).join('');
+    if (line) html += '<span class="opt-sep"></span>';
   }
   if (t === 'text') html += '<span class="opt-hint">Tippe auf die Seite, um zu schreiben</span>';
   if (t === 'note') html += '<span class="opt-hint">Tippe auf die Seite für eine Haftnotiz</span>';
   if (t === 'laser') html += '<span class="opt-hint">Zeigen ohne zu schreiben – die Spur verblasst</span>';
+  if (t === 'tape') html += '<span class="opt-hint">Ziehe Tape über Text – antippen deckt auf</span>';
   if (t === 'eraser') html += '<span class="opt-hint">Radiert ganze Striche</span>';
   if (t === 'lasso') html += '<span class="opt-hint">Umkreise Inhalte zum Verschieben, Skalieren oder Kopieren</span>';
   o.innerHTML = html;
@@ -1795,6 +1871,8 @@ $('#options').addEventListener('click', (e) => {
   if (!b) return;
   const t = state.tool, cfg = state.tools[t];
   const done = () => { if (t === 'text') applyTextCfgToEditing(); renderOptions(); savePrefs(); };
+  if (b.dataset.switch) { setTool(b.dataset.switch); return; }
+  if (b.dataset.act === 'lassopanel') { openLassoPanel(b); return; }
   if (b.dataset.color) cfg.color = b.dataset.color;
   else if (b.dataset.width) cfg.width = +b.dataset.width;
   else if (b.dataset.size) cfg.size = +b.dataset.size;
@@ -1822,8 +1900,41 @@ $('#options').addEventListener('click', (e) => {
 });
 $('#tools').addEventListener('click', (e) => {
   const b = e.target.closest('.tool[data-tool]');
-  if (b) setTool(b.dataset.tool);
+  if (!b) return;
+  if (b.dataset.tool === 'lasso' && state.tool === 'lasso') { openLassoPanel(b); return; }
+  setTool(b.dataset.tool);
 });
+/** Panel „Lasso-Werkzeug“: Lasso-Art und was in die Auswahl kommt. */
+function openLassoPanel(anchor) {
+  const cfg = state.tools.lasso;
+  const rows = [['ink', 'Handschrift'], ['images', 'Bilder'], ['shapes', 'Formen'], ['arrows', 'Pfeile'], ['text', 'Textfelder'], ['tape', 'Tape'], ['notes', 'Notizzettel']];
+  const el = document.createElement('div');
+  el.className = 'lasso-panel';
+  el.innerHTML = `
+    <div class="lp-title">Lasso-Werkzeug</div>
+    <div class="lp-sub">Lasso-Art</div>
+    <div class="lp-modes">
+      <button type="button" class="lp-mode${cfg.mode === 'rect' ? ' active' : ''}" data-mode="rect">${icon('rectSel')}<span>Rechteckig</span></button>
+      <button type="button" class="lp-mode${cfg.mode !== 'rect' ? ' active' : ''}" data-mode="free">${icon('lassoFree')}<span>Freihand</span></button>
+    </div>
+    <div class="lp-sub">In Auswahl inbegriffen</div>
+    <div class="lp-list">${rows.map(([k, n]) => `<label class="lp-row"><span>${n}</span><input type="checkbox" class="switch" data-inc="${k}" ${cfg.inc[k] !== false ? 'checked' : ''}></label>`).join('')}</div>`;
+  el.addEventListener('click', (e) => {
+    const m = e.target.closest('[data-mode]');
+    if (!m) return;
+    cfg.mode = m.dataset.mode;
+    el.querySelectorAll('.lp-mode').forEach((b) => b.classList.toggle('active', b === m));
+    savePrefs();
+    renderOptions();
+  });
+  el.addEventListener('change', (e) => {
+    const k = e.target.dataset.inc;
+    if (!k) return;
+    cfg.inc[k] = e.target.checked;
+    savePrefs();
+  });
+  openMenu(anchor, el, 'lasso-menu');
+}
 
 /* =====================================================================
    Eingabe (Stift, Maus, Touch)
@@ -1884,6 +1995,7 @@ viewer.addEventListener('pointerdown', (e) => {
     case 'text': act = { type: 'text', id: e.pointerId, v, pt }; return;
     case 'note': act = { type: 'note', id: e.pointerId, v, pt }; return;
     case 'laser': return startLaser(v, e);
+    case 'tape': return startTape(v, pt, e);
   }
 });
 
@@ -1909,6 +2021,12 @@ viewer.addEventListener('pointermove', (e) => {
     case 'erase': eraseTo(getPt(e, act.v)); break;
     case 'lasso': {
       const pt = getPt(e, act.v);
+      if (act.rect) {
+        const [x0, y0] = act.start;
+        act.poly = [[x0, y0], [pt[0], y0], [pt[0], pt[1]], [x0, pt[1]]];
+        scheduleLive();
+        break;
+      }
       const L = act.poly[act.poly.length - 1];
       if (Math.hypot(pt[0] - L[0], pt[1] - L[1]) > 2 / state.zoom) { act.poly.push(pt); scheduleLive(); }
       break;
@@ -1951,10 +2069,16 @@ function endPointer(e) {
     case 'stroke':
     case 'shape': {
       detachLive();
+      const tapLike = a.type === 'shape' ? a.s.points.length < 2
+        : a.s.points.length <= 3 && Math.hypot(a.s.points[a.s.points.length - 1][0] - a.s.points[0][0], a.s.points[a.s.points.length - 1][1] - a.s.points[0][1]) < 4;
+      if (tapLike) {
+        const p0 = a.type === 'shape' ? a.a : a.s.points[0];
+        if (toggleTapeAt(a.v, p0[0], p0[1])) break;
+      }
       if (a.type === 'shape' && a.s.points.length < 2) break;
       if (a.type === 'stroke' && a.s.tool === 'pen' && state.tools.pen.shapeRec) {
         const rec = recognizeShape(a.s.points);
-        if (rec) Object.assign(a.s, { tool: 'shape', straight: true, points: rec, pen: undefined });
+        if (rec) Object.assign(a.s, { tool: 'shape', straight: true, kind: rec.kind, points: rec.points, pen: undefined });
       }
       const page = a.v.page;
       const before = snap(page);
@@ -2080,7 +2204,7 @@ function recognizeShape(P) {
   // Gerade Linie
   if (d > 24 && d > len * 0.9) {
     const maxDev = Math.max(...P.map((p) => distSeg(p[0], p[1], A[0], A[1], B[0], B[1])));
-    if (maxDev < Math.max(5, d * 0.06)) return shapePoints('line', [A[0], A[1]], [B[0], B[1]]);
+    if (maxDev < Math.max(5, d * 0.06)) return { kind: 'line', points: shapePoints('line', [A[0], A[1]], [B[0], B[1]]) };
   }
   // Geschlossene Formen
   if (d > size * 0.3 || Math.min(w, h) < 12) return null;
@@ -2088,9 +2212,9 @@ function recognizeShape(P) {
   const ellErr = P.reduce((sum, p) => sum + Math.abs(Math.hypot((p[0] - cx) / rx, (p[1] - cy) / ry) - 1), 0) / P.length;
   const tol = Math.min(w, h) * 0.12;
   const nearEdge = P.filter((p) => Math.min(Math.abs(p[0] - x0), Math.abs(p[0] - x1), Math.abs(p[1] - y0), Math.abs(p[1] - y1)) < tol).length / P.length;
-  if (nearEdge > 0.8 && ellErr > 0.08) return shapePoints('rect', [x0, y0], [x1, y1]);
-  if (ellErr < 0.16) return shapePoints('ellipse', [x0, y0], [x1, y1]);
-  if (nearEdge > 0.7) return shapePoints('rect', [x0, y0], [x1, y1]);
+  if (nearEdge > 0.8 && ellErr > 0.08) return { kind: 'rect', points: shapePoints('rect', [x0, y0], [x1, y1]) };
+  if (ellErr < 0.16) return { kind: 'ellipse', points: shapePoints('ellipse', [x0, y0], [x1, y1]) };
+  if (nearEdge > 0.7) return { kind: 'rect', points: shapePoints('rect', [x0, y0], [x1, y1]) };
   return null;
 }
 
@@ -2193,36 +2317,58 @@ function eraseTo(pt) {
 /* ---------- Formen ---------- */
 function startShape(v, pt, e) {
   const cfg = state.tools.shape;
-  act = { type: 'shape', id: e.pointerId, v, a: pt, kind: cfg.kind, s: { id: uid(), tool: 'shape', straight: true, color: cfg.color, width: cfg.width, points: [] } };
+  act = { type: 'shape', id: e.pointerId, v, a: pt, kind: cfg.kind, s: { id: uid(), tool: 'shape', kind: cfg.kind, straight: true, color: cfg.color, width: cfg.width, points: [] } };
   attachLive(v);
 }
 
 /* ---------- Lasso & Auswahl ---------- */
-function startLasso(v, pt, e) {
-  act = { type: 'lasso', id: e.pointerId, v, poly: [pt] };
+function startTape(v, pt, e) {
+  const cfg = state.tools.tape;
+  act = { type: 'shape', id: e.pointerId, v, a: pt, kind: 'line', s: { id: uid(), tool: 'tape', straight: true, hidden: true, color: cfg.color, width: cfg.width, points: [] } };
   attachLive(v);
 }
+/** Tippen auf ein Tape deckt es auf oder wieder zu. Gibt true zurück, wenn ein Tape getroffen wurde. */
+function toggleTapeAt(v, x, y) {
+  const page = v.page;
+  const t = [...page.strokes].reverse().find((s) => s.tool === 'tape' && strokeHit(s, x, y, 3));
+  if (!t) return false;
+  const before = snap(page);
+  t.hidden = t.hidden === false;
+  commit(page, before);
+  scheduleRender(v);
+  return true;
+}
+function startLasso(v, pt, e) {
+  act = { type: 'lasso', id: e.pointerId, v, poly: [pt], start: pt, rect: state.tools.lasso.mode === 'rect' };
+  attachLive(v);
+}
+const strokeCat = (s) => (s.tool === 'tape' ? 'tape' : s.tool === 'shape' ? (s.kind === 'arrow' ? 'arrows' : 'shapes') : 'ink');
+const itemCat = (it) => (it.type === 'image' ? 'images' : it.type === 'note' ? 'notes' : 'text');
 function finishLasso(a) {
   const page = a.v.page;
   const poly = a.poly;
+  const inc = state.tools.lasso.inc;
+  const okS = (s) => inc[strokeCat(s)] !== false;
+  const okI = (it) => inc[itemCat(it)] !== false;
   const strokes = new Set(), items = new Set();
   const bb = poly.reduce((b, p) => ({ x0: Math.min(b.x0, p[0]), y0: Math.min(b.y0, p[1]), x1: Math.max(b.x1, p[0]), y1: Math.max(b.y1, p[1]) }), { x0: Infinity, y0: Infinity, x1: -Infinity, y1: -Infinity });
   const isTap = (bb.x1 - bb.x0) + (bb.y1 - bb.y0) < 8 / state.zoom;
   if (isTap) {
     const [x, y] = poly[0];
-    const it = itemAt(page, x, y);
+    const it = [...page.items].reverse().find((i) => okI(i) && x >= i.x - 4 && x <= i.x + i.w + 4 && y >= i.y - 4 && y <= i.y + i.h + 4);
     if (it) items.add(it.id);
     else {
-      const s = [...page.strokes].reverse().find((s) => strokeHit(s, x, y, 4 / state.zoom));
+      const s = [...page.strokes].reverse().find((s) => okS(s) && strokeHit(s, x, y, 4 / state.zoom));
       if (s) strokes.add(s.id);
     }
   } else if (poly.length > 2) {
     for (const s of page.strokes) {
+      if (!okS(s)) continue;
       let inside = 0;
       for (const p of s.points) if (pointInPoly(p[0], p[1], poly)) inside++;
       if (inside / s.points.length >= 0.5) strokes.add(s.id);
     }
-    for (const it of page.items) if (pointInPoly(it.x + it.w / 2, it.y + it.h / 2, poly)) items.add(it.id);
+    for (const it of page.items) if (okI(it) && pointInPoly(it.x + it.w / 2, it.y + it.h / 2, poly)) items.add(it.id);
   }
   if (strokes.size || items.size) {
     state.selection = { pageId: page.id, strokes, items };
@@ -3037,7 +3183,7 @@ document.addEventListener('keydown', (e) => {
   if (mod || e.altKey) return;
   if ((k === 'delete' || k === 'backspace') && state.selection) { e.preventDefault(); deleteSelection(); return; }
   if (k === 'escape') { clearSelection(); closeMenu(); return; }
-  const map = { p: 'pen', h: 'highlighter', e: 'eraser', l: 'lasso', s: 'shape', t: 'text', n: 'note', k: 'laser' };
+  const map = { p: 'pen', h: 'highlighter', e: 'eraser', l: 'lasso', s: 'shape', t: 'text', n: 'note', k: 'laser', a: 'tape' };
   if (map[k]) setTool(map[k]);
   if (isHorizontal() && (k === 'arrowright' || k === 'arrowleft') && !state.selection) {
     e.preventDefault();
