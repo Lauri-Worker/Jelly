@@ -222,7 +222,7 @@ input { font: inherit; color: inherit; }
   position: absolute; z-index: 20; top: 0; bottom: 0; left: 0; box-shadow: var(--shadow-lg);
 }
 .side-scrim { position: absolute; inset: 0; z-index: 19; background: rgba(10, 12, 18, .28); }
-.side-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 2px 2px 0 6px; }
+.side-head { display: flex; align-items: center; justify-content: flex-end; gap: 8px; padding: 2px 2px 0 6px; min-height: 44px; }
 .brand { display: flex; align-items: center; gap: 10px; font: 700 18px/1 var(--font-display); letter-spacing: -.02em; }
 .brand img { border-radius: 8px; box-shadow: var(--shadow-sm); }
 .side-nav { display: flex; flex-direction: column; gap: 4px; }
@@ -312,8 +312,8 @@ input { font: inherit; color: inherit; }
 #library.side-open:not(.side-narrow) .lib-main { padding-left: 26px; }
 .lib-note { margin: -8px 0 22px; color: var(--text-2); font-size: 14px; }
 .nb-grid {
-  display: grid; gap: 52px 40px;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  display: grid; gap: 56px 24px;
+  grid-template-columns: repeat(auto-fill, minmax(176px, 1fr));
 }
 .nb-card { position: relative; cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; min-width: 0; }
 .nb-card:active .doc, .nb-card:active .folder-ico { transform: scale(.97); }
@@ -339,7 +339,7 @@ input { font: inherit; color: inherit; }
 
 /* Bibliotheks-Elemente: Bildfläche (unten ausgerichtet) + mittiger Titel */
 .item-slot {
-  position: relative; aspect-ratio: 1 / 1; max-width: 100%;
+  position: relative; aspect-ratio: 1 / 1; width: 156px; max-width: 100%; margin: 0 auto;
   display: flex; align-items: flex-end; justify-content: center;
 }
 .doc {
@@ -384,13 +384,13 @@ input { font: inherit; color: inherit; }
 
 /* Favoriten-Stern */
 .star {
-  position: absolute; top: 7px; right: 7px; z-index: 2;
-  width: 32px; height: 32px; border: 0; border-radius: 50%; padding: 0;
+  position: absolute; top: 5px; right: 5px; z-index: 2;
+  width: 28px; height: 28px; border: 0; border-radius: 50%; padding: 0;
   display: flex; align-items: center; justify-content: center;
   background: transparent; color: rgba(20, 22, 28, .32);
   transition: transform .15s ease, color .15s ease;
 }
-.star .ic { width: 22px; height: 22px; stroke-width: 1.6; }
+.star .ic { width: 19px; height: 19px; stroke-width: 1.7; }
 .star:hover { color: rgba(20, 22, 28, .55); }
 .star:active { transform: scale(.85); }
 .doc-cover .star, .folder-ico .star { color: rgba(255,255,255,.75); }
@@ -399,10 +399,10 @@ input { font: inherit; color: inherit; }
 .star.on .ic { fill: #ffc83d; }
 
 /* Titel mittig, ⌄ fürs Menü, Datum darunter */
-.nb-info { margin-top: 14px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 2px; }
+.nb-info { margin-top: 12px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 2px; max-width: 220px; margin-left: auto; margin-right: auto; }
 .item-title { display: inline-flex; align-items: flex-start; justify-content: center; gap: 2px; max-width: 100%; }
 .nb-title {
-  font-size: 16px; font-weight: 550; letter-spacing: -.01em; line-height: 1.3; min-width: 0;
+  font-size: 15px; font-weight: 500; letter-spacing: -.01em; line-height: 1.3; min-width: 0;
   overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow-wrap: anywhere;
 }
 .nb-meta { font-size: 12px; color: var(--text-2); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
@@ -446,31 +446,31 @@ input { font: inherit; color: inherit; }
 
 /* Ordner: flaches Ordner-Symbol in der Ordnerfarbe */
 .folder-ico {
-  position: relative; width: 100%; max-width: 100%; aspect-ratio: 1.3 / 1;
+  position: relative; width: 100%; max-width: 100%; aspect-ratio: 1.2 / 1;
   transition: transform .25s cubic-bezier(.2, .8, .2, 1);
   filter: drop-shadow(0 10px 14px rgba(0,0,0,.14));
 }
 .folder-ico-back {
-  position: absolute; left: 0; right: 0; bottom: 0; top: 8%;
-  background: var(--fc); filter: brightness(.86); border-radius: 14px;
+  position: absolute; left: 0; right: 0; bottom: 0; top: 9%;
+  background: var(--fc); filter: brightness(.86); border-radius: 18px;
 }
 .folder-ico-back::before {
-  content: ""; position: absolute; left: 0; top: -8%; width: 40%; height: 20%;
-  background: inherit; border-radius: 12px 14px 0 0;
+  content: ""; position: absolute; left: 0; top: -9%; width: 42%; height: 24%;
+  background: inherit; border-radius: 16px 26px 0 0;
 }
 .folder-ico-front {
   position: absolute; left: 0; right: 0; bottom: 0; height: 80%;
-  background: var(--fc); border-radius: 12px 12px 14px 14px; overflow: hidden;
+  background: var(--fc); border-radius: 16px 16px 18px 18px; overflow: hidden;
   box-shadow: inset 0 1px 0 rgba(255,255,255,.5);
 }
 .folder-ico-front::before {
   content: ""; position: absolute; inset: 0; pointer-events: none;
   background: linear-gradient(180deg, rgba(255,255,255,.22), rgba(255,255,255,0) 45%, rgba(0,0,0,.06));
 }
-.folder-ico .star { top: calc(20% + 8px); right: 8px; }
+.folder-ico .star { top: calc(20% + 6px); right: 6px; }
 .folder-count {
-  position: absolute; left: 12px; bottom: 11px; z-index: 1;
-  min-width: 26px; height: 24px; padding: 0 9px; border-radius: 999px;
+  position: absolute; left: 9px; bottom: 9px; z-index: 1;
+  min-width: 22px; height: 20px; padding: 0 7px; border-radius: 999px;
   display: inline-flex; align-items: center; justify-content: center;
   background: rgba(255,255,255,.3); color: #fff;
   font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums;
@@ -904,6 +904,7 @@ dialog::backdrop { background: rgba(10, 12, 18, .38); -webkit-backdrop-filter: b
 @media (max-width: 720px) {
   .lib-top-title { max-width: 34vw; font-size: 16px; }
   .lib-bar .btn.primary .lbl { display: inline; }
-  .nb-grid { gap: 36px 22px; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
+  .nb-grid { gap: 40px 14px; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+  .item-slot { width: 128px; }
   .lib-side { width: min(300px, 86vw); }
 }
